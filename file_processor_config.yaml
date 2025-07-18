@@ -1,0 +1,232 @@
+# FileProcessor Configuration
+# ===========================
+# Complete configuration for the modular FileProcessor system
+
+# Language detection mappings
+# Maps file extensions to language identifiers
+languages:
+  # Python
+  ".py": python
+  ".pyx": python
+  ".pyi": python
+  
+  # JavaScript/TypeScript
+  ".js": javascript
+  ".mjs": javascript
+  ".jsx": javascript
+  ".ts": typescript
+  ".tsx": typescript
+  
+  # Systems programming
+  ".cpp": cpp
+  ".cc": cpp
+  ".cxx": cpp
+  ".hpp": cpp
+  ".c": c
+  ".h": c
+  ".rs": rust
+  ".go": go
+  
+  # JVM languages
+  ".java": java
+  ".kt": kotlin
+  ".scala": scala
+  
+  # Other languages
+  ".rb": ruby
+  ".php": php
+  ".cs": csharp
+  ".fs": fsharp
+  ".swift": swift
+  ".dart": dart
+  ".r": r
+  ".R": r
+  ".jl": julia
+  ".lua": lua
+  ".pl": perl
+  ".perl": perl
+  
+  # Shell scripting
+  ".sh": shell
+  ".bash": shell
+  ".zsh": shell
+  ".fish": shell
+  ".ps1": powershell
+  ".bat": batch
+  ".cmd": batch
+  
+  # Web technologies
+  ".html": html
+  ".htm": html
+  ".xml": xml
+  ".css": css
+  ".scss": scss
+  ".sass": sass
+  ".less": less
+  ".vue": vue
+  ".svelte": svelte
+  
+  # Data formats
+  ".json": json
+  ".yaml": yaml
+  ".yml": yaml
+  ".toml": toml
+  ".ini": ini
+  ".cfg": config
+  ".conf": config
+  ".env": config
+  
+  # Documentation
+  ".md": markdown
+  ".markdown": markdown
+  ".rst": restructuredtext
+  ".txt": text
+  ".rtf": text
+  ".tex": latex
+  
+  # Database
+  ".sql": sql
+  
+  # Container/Infrastructure
+  ".dockerfile": dockerfile
+  ".Dockerfile": dockerfile
+
+# Files and directories to ignore during processing
+ignore_patterns:
+  # Directories to skip entirely
+  directories:
+    # Version control
+    - .git
+    - .svn
+    - .hg
+    - .bzr
+    
+    # Dependencies and packages
+    - node_modules
+    - vendor
+    - bower_components
+    - __pycache__
+    - .venv
+    - venv
+    - env
+    - site-packages
+    - dist-packages
+    
+    # Build outputs
+    - dist
+    - build
+    - target
+    - out
+    - bin
+    - obj
+    - release
+    - debug
+    - .next
+    - .nuxt
+    
+    # IDE and editor files
+    - .idea
+    - .vscode
+    - .vs
+    - .atom
+    - .sublime-project
+    
+    # OS-specific
+    - .Trash
+    - .cache
+  
+  # File patterns to ignore
+  files:
+    # OS files
+    - .DS_Store
+    - Thumbs.db
+    - desktop.ini
+    
+    # Temporary files
+    - "*.tmp"
+    - "*.temp"
+    - "*.log"
+    - "*.cache"
+    - "*.swp"
+    - "*.swo"
+    - "*~"
+    
+    # Compiled files
+    - "*.pyc"
+    - "*.pyo"
+    - "*.pyd"
+    - "*.so"
+    - "*.dll"
+    - "*.dylib"
+    - "*.class"
+    - "*.jar"
+    - "*.war"
+    - "*.ear"
+    - "*.o"
+    - "*.obj"
+    - "*.exe"
+    
+    # Archives
+    - "*.zip"
+    - "*.tar"
+    - "*.gz"
+    - "*.bz2"
+    - "*.7z"
+    - "*.rar"
+    - "*.iso"
+    
+    # Media files (usually not code)
+    - "*.jpg"
+    - "*.jpeg"
+    - "*.png"
+    - "*.gif"
+    - "*.svg"
+    - "*.ico"
+    - "*.mp4"
+    - "*.avi"
+    - "*.mov"
+    - "*.wmv"
+    - "*.mp3"
+    - "*.wav"
+    - "*.flac"
+    
+    # Documents (usually not code)
+    - "*.pdf"
+    - "*.doc"
+    - "*.docx"
+    - "*.xls"
+    - "*.xlsx"
+    - "*.ppt"
+    - "*.pptx"
+    
+    # Lock files
+    - package-lock.json
+    - yarn.lock
+    - Pipfile.lock
+    - poetry.lock
+
+# Text encoding detection settings
+encoding:
+  # Try encodings in this order
+  priority:
+    - utf-8
+    - utf-16
+    - latin-1
+    - ascii
+  
+  # What to do when all encodings fail
+  fallback: binary
+
+# Processing behavior settings
+processing:
+  # Maximum file size to process (in MB)
+  max_file_size_mb: 10
+  
+  # Buffer size for reading files (in bytes)
+  chunk_size_bytes: 8192
+  
+  # Enable content-based language detection as fallback
+  enable_content_detection: true
+  
+  # Cache file metadata for faster subsequent runs
+  enable_metadata_cache: true
