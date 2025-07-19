@@ -1,0 +1,175 @@
+# Python Tree-sitter Configuration
+# ================================
+# 
+# Defines how to parse and chunk Python code using tree-sitter.
+# This configuration maps tree-sitter node types to semantic chunks.
+
+# File extensions this chunker handles
+file_extensions:
+  - ".py"
+  - ".pyx"  # Cython
+  - ".pyi"  # Type stub files
+
+# Tree-sitter node types that represent meaningful chunks
+# Maps node_type -> ChunkType
+chunk_node_types:
+  # Functions and methods
+  function_definition: "function"
+  async_function_definition: "function"
+  
+  # Classes
+  class_definition: "class"
+  
+  # Module-level constructs
+  module: "module"
+  
+  # Import statements
+  import_statement: "import"
+  import_from_statement: "import"
+  future_import_statement: "import"
+  
+  # Control structures (can be chunks for complex logic)
+  if_statement: "text_block"
+  for_statement: "text_block"
+  while_statement: "text_block"
+  try_statement: "text_block"
+  with_statement: "text_block"
+  
+  # Assignments (for global variables/constants)
+  assignment: "variable"
+  augmented_assignment: "variable"
+
+# Node types that should never be split (atomic units)
+atomic_node_types:
+  - "function_definition"
+  - "async_function_definition" 
+  - "class_definition"
+  - "import_statement"
+  - "import_from_statement"
+  - "future_import_statement"
+  - "decorated_definition"
+  - "string"
+  - "comment"
+
+# Node types that can be safely split if too large
+splittable_node_types:
+  - "module"
+  - "block"
+  - "if_statement"
+  - "for_statement"
+  - "while_statement"
+  - "try_statement"
+  - "with_statement"
+  - "expression_statement"
+
+# Importance weights for different node types (0.0 to 1.0)
+# Higher values mean more important to preserve as complete chunks
+importance_weights:
+  # High importance - core language constructs
+  function_definition: 1.0
+  async_function_definition: 1.0
+  class_definition: 1.0
+  decorated_definition: 0.9
+  
+  # Medium importance - structural elements
+  if_statement: 0.7
+  for_statement: 0.7
+  while_statement: 0.7
+  try_statement: 0.8
+  with_statement: 0.7
+  
+  # Lower importance - can be split
+  module: 0.5
+  block: 0.4
+  expression_statement: 0.3
+  assignment: 0.6
+  
+  # Import statements
+  import_statement: 0.8
+  import_from_statement: 0.8
+  future_import_statement: 0.8
+  
+  # Comments and strings
+  comment: 0.2
+  string: 0.3
+  
+  # Default for unspecified types
+  _default: 0.5
+
+# Python-specific configuration
+language_specific:
+  # Patterns for extracting identifiers
+  identifier_patterns:
+    function_definition: "name"          # Get function name from 'name' field
+    async_function_definition: "name"    # Get async function name
+    class_definition: "name"             # Get class name
+    
+  # Special handling for decorators
+  decorator_handling:
+    include_in_chunk: true               # Include decorators with function/class
+    separate_if_large: false             # Don't separate decorators into own chunks
+    
+  # Method detection within classes
+  method_detection:
+    enabled: true
+    treat_as_methods: true               # Treat functions in classes as methods
+    
+  # Import grouping
+  import_grouping:
+    group_consecutive: true              # Group consecutive imports into one chunk
+    max_group_size: 20                   # Maximum lines in an import group
+    separate_from_imports: false         # Keep 'from' imports with regular imports
+    
+  # Docstring handling
+  docstring_handling:
+    include_with_definition: true        # Include docstrings with function/class
+    standalone_threshold: 100            # Separate docstrings if longer than this
+    
+  # Special Python constructs
+  special_constructs:
+    # Handle if __name__ == "__main__" blocks
+    main_block:
+      treat_as_chunk: true
+      chunk_type: "text_block"
+      importance: 0.9
+    
+    # Handle async/await patterns
+    async_patterns:
+      async_with: true
+      async_for: true
+      await_expressions: false           # Don't chunk individual await expressions
+    
+    # Handle comprehensions
+    comprehensions:
+      list_comprehension: false          # Don't chunk individual comprehensions
+      dict_comprehension: false
+      set_comprehension: false
+      generator_expression: false
+    
+    # Handle lambda functions
+    lambda_functions:
+      treat_as_functions: false          # Don't treat lambdas as separate chunks
+      include_in_parent: true            # Include with parent expression
+
+# Quality thresholds
+quality_thresholds:
+  min_function_lines: 3                  # Minimum lines for a function chunk
+  min_class_lines: 5                     # Minimum lines for a class chunk  
+  max_atomic_lines: 200                  # Maximum lines before considering splitting atomic nodes
+  
+# Performance settings
+performance:
+  max_node_depth: 50                     # Maximum AST depth to traverse
+  enable_caching: true                   # Cache parsed trees for performance
+  parallel_processing: false             # Process nodes in parallel (experimental)
+
+# Validation rules
+validation:
+  required_fields:
+    function_definition: ["name"]        # Functions must have names
+    class_definition: ["name"]           # Classes must have names
+  
+  warning_conditions:
+    empty_functions: true                # Warn about empty function definitions
+    missing_docstrings: false            # Don't warn about missing docstrings
+    overly_complex: true                 # Warn about very complex chunks

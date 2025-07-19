@@ -1,0 +1,266 @@
+# JavaScript/TypeScript Tree-sitter Configuration
+# ==============================================
+# 
+# Defines how to parse and chunk JavaScript and TypeScript code using tree-sitter.
+# Handles modern JS/TS features including ES6+, React JSX, and TypeScript specifics.
+
+# File extensions this chunker handles
+file_extensions:
+  - ".js"
+  - ".jsx"
+  - ".ts"
+  - ".tsx"
+  - ".mjs"   # ES modules
+  - ".cjs"   # CommonJS
+
+# Tree-sitter node types that represent meaningful chunks
+chunk_node_types:
+  # Function declarations and expressions
+  function_declaration: "function"
+  arrow_function: "function"
+  function_expression: "function"
+  generator_function_declaration: "function"
+  async_function_declaration: "function"
+  method_definition: "method"
+  
+  # Classes
+  class_declaration: "class"
+  class_expression: "class"
+  
+  # Variables and constants (for top-level declarations)
+  variable_declaration: "variable"
+  lexical_declaration: "variable"  # let/const
+  
+  # Import/Export statements
+  import_statement: "import"
+  export_statement: "import"
+  import_clause: "import"
+  export_clause: "import"
+  
+  # Control structures
+  if_statement: "text_block"
+  switch_statement: "text_block"
+  for_statement: "text_block"
+  for_in_statement: "text_block"
+  for_of_statement: "text_block"
+  while_statement: "text_block"
+  do_statement: "text_block"
+  try_statement: "text_block"
+  
+  # TypeScript specific
+  interface_declaration: "class"      # Treat interfaces like classes
+  type_alias_declaration: "variable"  # Treat type aliases like variables
+  enum_declaration: "class"           # Treat enums like classes
+  namespace_declaration: "module"     # Namespaces are like modules
+  
+  # React/JSX components
+  jsx_element: "text_block"
+  jsx_self_closing_element: "text_block"
+
+# Node types that should never be split (atomic units)
+atomic_node_types:
+  - "function_declaration"
+  - "arrow_function"
+  - "function_expression"
+  - "generator_function_declaration"
+  - "async_function_declaration"
+  - "method_definition"
+  - "class_declaration"
+  - "class_expression"
+  - "interface_declaration"
+  - "type_alias_declaration"
+  - "enum_declaration"
+  - "import_statement"
+  - "export_statement"
+  - "string"
+  - "template_string"
+  - "comment"
+  - "jsx_element"
+  - "jsx_self_closing_element"
+
+# Node types that can be safely split if too large
+splittable_node_types:
+  - "program"                 # Top-level program
+  - "statement_block"         # Block statements
+  - "switch_body"            # Switch statement body
+  - "object_expression"      # Large object literals
+  - "array_expression"       # Large arrays
+  - "variable_declaration"   # Multiple variable declarations
+  - "expression_statement"   # Expression statements
+
+# Importance weights for different node types (0.0 to 1.0)
+importance_weights:
+  # High importance - core constructs
+  function_declaration: 1.0
+  arrow_function: 0.95
+  async_function_declaration: 1.0
+  generator_function_declaration: 0.9
+  class_declaration: 1.0
+  interface_declaration: 0.95
+  type_alias_declaration: 0.8
+  enum_declaration: 0.9
+  
+  # Methods and functions
+  method_definition: 0.9
+  function_expression: 0.85
+  
+  # Control structures
+  if_statement: 0.7
+  switch_statement: 0.8
+  for_statement: 0.7
+  while_statement: 0.7
+  try_statement: 0.8
+  
+  # Variables and declarations
+  variable_declaration: 0.6
+  lexical_declaration: 0.6
+  
+  # Import/Export
+  import_statement: 0.8
+  export_statement: 0.8
+  
+  # JSX/React
+  jsx_element: 0.6
+  jsx_self_closing_element: 0.5
+  
+  # Lower priority
+  expression_statement: 0.3
+  object_expression: 0.4
+  array_expression: 0.3
+  
+  # Comments
+  comment: 0.2
+  
+  # Default
+  _default: 0.5
+
+# JavaScript/TypeScript specific configuration
+language_specific:
+  # Identifier extraction patterns
+  identifier_patterns:
+    function_declaration: "name"
+    arrow_function: "identifier"          # May not have name
+    class_declaration: "name"
+    interface_declaration: "name"
+    type_alias_declaration: "name"
+    enum_declaration: "name"
+    method_definition: "property_name"
+    variable_declarator: "name"
+    
+  # Function detection patterns
+  function_patterns:
+    # Arrow functions in variable declarations
+    arrow_in_variable: true
+    # Anonymous function expressions
+    anonymous_functions: true
+    # Async/await handling
+    async_patterns: true
+    # Generator functions
+    generator_functions: true
+    
+  # Class and object handling
+  class_handling:
+    include_methods: true                 # Include methods with class
+    separate_large_methods: true          # Separate very large methods
+    static_methods: true                  # Handle static methods
+    getters_setters: true                 # Include getters/setters
+    
+  # Module system handling
+  module_handling:
+    # ES6 modules
+    es6_imports: true
+    es6_exports: true
+    # CommonJS
+    commonjs_require: true
+    commonjs_exports: true
+    # Group imports
+    group_imports: true
+    max_import_group: 15
+    
+  # TypeScript specific features
+  typescript_features:
+    type_annotations: true               # Handle type annotations
+    generics: true                       # Handle generic types
+    decorators: true                     # Handle decorators
+    interfaces: true                     # Treat interfaces as chunks
+    type_aliases: true                   # Handle type aliases
+    enums: true                         # Handle enums
+    namespaces: true                    # Handle namespaces
+    
+  # React/JSX handling
+  jsx_handling:
+    enabled: true
+    component_detection: true            # Detect React components
+    hook_detection: true                 # Detect React hooks (use*, custom hooks)
+    jsx_elements: false                  # Don't chunk individual JSX elements
+    component_patterns:
+      functional_components: true        # Arrow function components
+      class_components: true             # Class-based components
+      hook_components: true              # Components using hooks
+      
+  # Special constructs
+  special_constructs:
+    # Immediately Invoked Function Expressions
+    iife:
+      treat_as_chunk: true
+      importance: 0.8
+    
+    # Object method shorthand
+    object_methods:
+      treat_as_methods: true
+      include_in_object: false           # Separate from parent object
+    
+    # Template literals
+    template_literals:
+      large_templates: true              # Chunk large template literals
+      min_size: 200                      # Minimum size to consider chunking
+    
+    # Promises and async patterns
+    async_patterns:
+      promise_chains: false              # Don't chunk promise chains
+      async_functions: true              # Chunk async functions
+      await_expressions: false           # Don't chunk individual awaits
+
+# Performance and quality settings
+quality_thresholds:
+  min_function_lines: 2
+  min_class_lines: 3
+  min_component_lines: 5                 # For React components
+  max_atomic_lines: 150
+  max_object_properties: 20              # Max properties before splitting object
+
+performance:
+  max_node_depth: 60                     # JS can be deeply nested
+  enable_caching: true
+  parallel_processing: false
+  jsx_parsing: true                      # Enable JSX parsing
+
+# Validation and quality rules
+validation:
+  required_fields:
+    function_declaration: ["name"]
+    class_declaration: ["name"]
+    interface_declaration: ["name"]
+    
+  warning_conditions:
+    anonymous_functions: false           # Don't warn about anonymous functions
+    missing_types: false                 # Don't warn about missing TypeScript types
+    overly_complex: true
+    large_jsx_components: true           # Warn about very large React components
+
+# Framework-specific patterns
+framework_patterns:
+  react:
+    enabled: true
+    component_patterns:
+      - "^[A-Z]"                        # Component names start with capital
+      - "Component$"                     # Ends with Component
+      - "Hook$"                         # Custom hooks
+    hook_patterns:
+      - "^use[A-Z]"                     # Hook naming convention
+      
+  vue:
+    enabled: false                       # Disable Vue-specific patterns
+    
+  angular:
+    enabled: false                       # Disable Angular-specific patterns
