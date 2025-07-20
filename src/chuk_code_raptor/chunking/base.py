@@ -1,146 +1,154 @@
-# chuk_code_raptor/chunking/base.py
+# src/chuk_code_raptor/chunking/base.py
 """
-Base Chunker Interface
-======================
+Base Parser Classes
+==================
 
-Abstract base class for all chunkers in the modern AST-based system.
-Clean, focused on tree-sitter structural understanding.
+Clean base classes for all parsers. Tree-sitter first, with support for alternative strategies.
+No legacy support - clean forward-looking implementation.
 """
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Set
+from dataclasses import dataclass
 import logging
 
-from chuk_code_raptor.core.models import CodeChunk, ChunkType, create_chunk_id
-from .config import ChunkingConfig, ChunkingStrategy
+from .semantic_chunk import SemanticChunk, ContentType, create_chunk_id
+from chuk_code_raptor.core.models import ChunkType
+from .config import ChunkingConfig
 
 logger = logging.getLogger(__name__)
 
-class BaseChunker(ABC):
-    """Abstract base class for all chunkers"""
+@dataclass
+class ParseContext:
+    """Context for parsing operations"""
+    file_path: str
+    language: str
+    content_type: ContentType
+    max_chunk_size: int
+    min_chunk_size: int
+    enable_semantic_analysis: bool = True
+    enable_dependency_tracking: bool = True
+    metadata: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
+
+class BaseParser(ABC):
+    """Base class for all parsers in the chunking system"""
     
     def __init__(self, config: ChunkingConfig):
-        """
-        Initialize the chunker with configuration.
-        
-        Args:
-            config: ChunkingConfig object with chunking parameters
-        """
         self.config = config
-        self.supported_extensions: Set[str] = set()
         self.supported_languages: Set[str] = set()
-        self.strategy = ChunkingStrategy.STRUCTURAL
+        self.supported_extensions: Set[str] = set()
+        self.parser_type: str = "base"
         self.name = self.__class__.__name__
+        
+        # Strategy for coordination with engine
+        self.strategy = getattr(config, 'primary_strategy', 'structural')
     
     @abstractmethod
-    def can_chunk(self, language: str, file_extension: str) -> bool:
-        """
-        Check if this chunker can handle the given language/extension.
-        
-        Args:
-            language: Programming language (e.g., 'python', 'javascript')
-            file_extension: File extension (e.g., '.py', '.js')
-            
-        Returns:
-            True if this chunker can handle the language/extension
-        """
+    def can_parse(self, language: str, file_extension: str) -> bool:
+        """Check if this parser can handle the language/extension"""
         pass
     
     @abstractmethod
-    def chunk_content(self, content: str, language: str, file_path: str) -> List[CodeChunk]:
-        """
-        Chunk the content and return list of CodeChunk objects.
-        
-        Args:
-            content: File content to chunk
-            language: Programming language
-            file_path: Path to the source file
-            
-        Returns:
-            List of CodeChunk objects
-        """
+    def parse(self, content: str, context: ParseContext) -> List[SemanticChunk]:
+        """Parse content and return semantic chunks"""
         pass
     
     def get_priority(self, language: str, file_extension: str) -> int:
-        """
-        Return priority for this chunker (higher = more preferred).
-        
-        Args:
-            language: Programming language
-            file_extension: File extension
-            
-        Returns:
-            Priority score (0-100, higher is better)
-        """
+        """Return priority for this parser (higher = more preferred)"""
         if language in self.supported_languages:
             return 100
         if file_extension in self.supported_extensions:
             return 50
         return 0
     
+    # Compatibility interface for existing engine
+    def can_chunk(self, language: str, file_extension: str) -> bool:
+        """Compatibility method"""
+        return self.can_parse(language, file_extension)
+    
+    def chunk_content(self, content: str, language: str, file_path: str) -> List[SemanticChunk]:
+        """Compatibility interface - creates ParseContext and calls parse"""
+        context = ParseContext(
+            file_path=file_path,
+            language=language,
+            content_type=self._detect_content_type(file_path, language),
+            max_chunk_size=self.config.max_chunk_size,
+            min_chunk_size=self.config.min_chunk_size
+        )
+        return self.parse(content, context)
+    
+    def parse_content(self, content: str, context: ParseContext) -> List[SemanticChunk]:
+        """Alternative interface name for consistency"""
+        return self.parse(content, context)
+    
+    def _detect_content_type(self, file_path: str, language: str) -> ContentType:
+        """Detect content type from file path and language"""
+        from pathlib import Path
+        extension = Path(file_path).suffix.lower()
+        
+        if extension in {'.md', '.markdown'}:
+            return ContentType.MARKDOWN
+        elif extension in {'.html', '.htm'}:
+            return ContentType.HTML
+        elif extension == '.json':
+            return ContentType.JSON
+        elif extension in {'.yaml', '.yml'}:
+            return ContentType.YAML
+        elif extension == '.xml':
+            return ContentType.XML
+        elif language in {'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'cpp'}:
+            return ContentType.CODE
+        else:
+            return ContentType.TEXT
+    
     def _create_chunk(self, content: str, start_line: int, end_line: int, 
                      chunk_type: ChunkType, language: str, file_path: str,
-                     identifier: str = None, metadata: Dict[str, Any] = None) -> CodeChunk:
-        """
-        Helper method to create a CodeChunk with consistent metadata.
-        
-        Args:
-            content: Chunk content
-            start_line: Starting line number (1-based)
-            end_line: Ending line number (1-based)
-            chunk_type: Type of chunk
-            language: Programming language
-            file_path: Source file path
-            identifier: Optional identifier (function name, class name, etc.)
-            metadata: Additional metadata
-            
-        Returns:
-            CodeChunk object
-        """
+                     identifier: str = None, metadata: Dict[str, Any] = None) -> SemanticChunk:
+        """Helper method to create a SemanticChunk with consistent metadata"""
         chunk_id = create_chunk_id(file_path, start_line, chunk_type, identifier)
         
-        # Merge chunker metadata
+        # Merge parser metadata
         final_metadata = {
-            'chunker': self.name,
-            'strategy': self.strategy.value,
+            'parser': self.name,
+            'parser_type': self.parser_type,
+            'strategy': self.strategy,
             'extraction_method': 'structural',
             **(metadata or {})
         }
         
-        return CodeChunk(
+        return SemanticChunk(
             id=chunk_id,
             file_path=file_path,
             content=content,
             start_line=start_line,
             end_line=end_line,
             chunk_type=chunk_type,
+            content_type=self._detect_content_type(file_path, language),
             language=language,
             metadata=final_metadata
         )
     
-    def _split_into_lines(self, content: str) -> List[str]:
-        """Split content into lines, preserving empty lines"""
-        return content.split('\n')
-    
-    def _join_lines(self, lines: List[str], start_idx: int, end_idx: int) -> str:
-        """Join a range of lines back into content"""
-        return '\n'.join(lines[start_idx:end_idx])
-    
-    def _is_size_valid(self, content: str) -> bool:
-        """Check if chunk size is within acceptable limits"""
-        size = len(content)
-        return self.config.min_chunk_size <= size <= self.config.max_chunk_size
-    
-    def _post_process_chunks(self, chunks: List[CodeChunk]) -> List[CodeChunk]:
-        """
-        Post-process chunks to ensure quality and size constraints.
+    def _should_include_chunk(self, chunk: SemanticChunk) -> bool:
+        """Determine if chunk should be included based on size and importance"""
+        # Size filters
+        if len(chunk.content) < self.config.min_chunk_size:
+            # Allow small chunks for important types
+            if chunk.chunk_type not in [ChunkType.IMPORT, ChunkType.COMMENT]:
+                return False
         
-        Args:
-            chunks: Raw chunks from the chunker
-            
-        Returns:
-            Processed and validated chunks
-        """
+        if len(chunk.content) > self.config.max_chunk_size:
+            # Allow large chunks for atomic types if configured
+            if not self.config.preserve_atomic_nodes:
+                return False
+        
+        return True
+    
+    def _post_process(self, chunks: List[SemanticChunk]) -> List[SemanticChunk]:
+        """Post-process chunks to ensure quality and size constraints"""
         processed_chunks = []
         
         for chunk in chunks:
@@ -162,9 +170,11 @@ class BaseChunker(ABC):
             else:
                 processed_chunks.append(chunk)
         
+        # Sort by line number
+        processed_chunks.sort(key=lambda c: c.start_line)
         return processed_chunks
     
-    def _is_atomic_chunk(self, chunk: CodeChunk) -> bool:
+    def _is_atomic_chunk(self, chunk: SemanticChunk) -> bool:
         """Check if chunk represents an atomic unit that shouldn't be split"""
         atomic_types = {ChunkType.FUNCTION, ChunkType.METHOD, ChunkType.CLASS}
         return chunk.chunk_type in atomic_types
@@ -173,57 +183,41 @@ class BaseChunker(ABC):
         """
         Extract an identifier (name) from chunk content.
         Override in subclasses for language-specific extraction.
-        
-        Args:
-            content: Chunk content
-            chunk_type: Type of chunk
-            
-        Returns:
-            Identifier string if found, None otherwise
         """
         return None
     
-    def _calculate_complexity_score(self, chunk: CodeChunk) -> float:
+    def _calculate_importance_score(self, chunk: SemanticChunk) -> float:
         """
-        Calculate a complexity/quality score for the chunk.
+        Calculate importance score for the chunk.
         Override in subclasses for language-specific scoring.
-        
-        Args:
-            chunk: Chunk to score
-            
-        Returns:
-            Complexity score (0.0 to 10.0)
         """
-        score = 0.0
+        score = 0.5  # Base score
         
         # Size score (prefer target size)
         size_ratio = len(chunk.content) / self.config.target_chunk_size
         if 0.5 <= size_ratio <= 1.5:  # Within 50% of target
-            score += 2.0
+            score += 0.2
         elif 0.2 <= size_ratio <= 2.0:  # Reasonable size
-            score += 1.0
-        
-        # Content richness
-        word_count = len(chunk.content.split())
-        if word_count > 10:
-            score += 0.5
-        if word_count > 50:
-            score += 0.5
+            score += 0.1
         
         # Semantic unit bonus
         if chunk.chunk_type in {ChunkType.FUNCTION, ChunkType.CLASS, ChunkType.METHOD}:
-            score += 1.0
+            score += 0.3
         
-        return min(score, 10.0)  # Cap at 10.0
+        # Dependency bonus
+        if chunk.dependencies:
+            score += min(len(chunk.dependencies) * 0.05, 0.2)
+        
+        return min(score, 1.0)  # Cap at 1.0
 
-class ChunkerError(Exception):
-    """Base exception for chunker errors"""
+class ParserError(Exception):
+    """Base exception for parser errors"""
     pass
 
-class UnsupportedLanguageError(ChunkerError):
-    """Raised when a chunker doesn't support the requested language"""
+class UnsupportedLanguageError(ParserError):
+    """Raised when language is not supported"""
     pass
 
-class InvalidContentError(ChunkerError):
+class InvalidContentError(ParserError):
     """Raised when content cannot be chunked properly"""
     pass

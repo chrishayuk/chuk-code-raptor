@@ -4,53 +4,37 @@ Chunking Engine
 ===============
 
 Main engine that coordinates chunking operations.
-Clean, unified implementation using semantic chunks.
+Clean, unified implementation supporting both tree-sitter and heuristic parsers.
 """
 
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import logging
+import time
 
 from chuk_code_raptor.core.models import FileInfo
 from .config import ChunkingConfig
-from .registry import ChunkerRegistry, get_registry
-from .base import UnsupportedLanguageError, InvalidContentError
 from .semantic_chunk import SemanticChunk, ContentType
+from .base import BaseParser, ParseContext, UnsupportedLanguageError
+
 logger = logging.getLogger(__name__)
 
-# Simple ParseContext class for chunking
-from dataclasses import dataclass
-
-@dataclass
-class ParseContext:
-    """Context for parsing operations"""
-    file_path: str
-    language: str
-    content_type: ContentType
-    max_chunk_size: int
-    min_chunk_size: int
-    enable_semantic_analysis: bool = True
-    enable_dependency_tracking: bool = True
-
 class ChunkingEngine:
-    """Main engine for chunking operations"""
+    """Main engine for chunking operations using clean parser architecture"""
     
-    def __init__(self, config: ChunkingConfig = None, registry: ChunkerRegistry = None):
+    def __init__(self, config: ChunkingConfig = None):
         """
         Initialize chunking engine.
         
         Args:
             config: ChunkingConfig to use (creates default if None)
-            registry: ChunkerRegistry to use (uses global if None)
         """
         self.config = config or ChunkingConfig()
-        self.registry = registry or get_registry()
+        self.parsers: Dict[str, BaseParser] = {}
         
-        # Set config on registry
-        self.registry.set_config(self.config)
-        
-        # Statistics
+        # Statistics (preserving original structure)
         self.stats = {
+            'files_processed': 0,
             'files_chunked': 0,
             'chunks_created': 0,
             'total_processing_time': 0.0,
@@ -58,7 +42,69 @@ class ChunkingEngine:
             'errors': []
         }
         
-        logger.info(f"Initialized ChunkingEngine with {len(self.registry._chunkers)} chunkers")
+        # Auto-discover and register parsers
+        self._register_parsers()
+        
+        logger.info(f"Initialized ChunkingEngine with {len(self.parsers)} parser instances")
+    
+    def _register_parsers(self):
+        """Auto-discover and register available parsers"""
+        parser_configs = [
+            # Tree-sitter parsers (preferred when available)
+            ('python', 'chuk_code_raptor.chunking.parsers.python', 'PythonParser'),
+            ('markdown', 'chuk_code_raptor.chunking.parsers.markdown', 'MarkdownParser'),
+            ('javascript', 'chuk_code_raptor.chunking.parsers.javascript', 'JavaScriptParser'),
+            ('json', 'chuk_code_raptor.chunking.parsers.json', 'JSONParser'),
+            ('html', 'chuk_code_raptor.chunking.parsers.html', 'HTMLParser'),
+            # Skip rust for now due to tree-sitter version issues
+            # ('rust', 'chuk_code_raptor.chunking.parsers.rust', 'RustParser'),
+        ]
+        
+        successful_parsers = []
+        failed_parsers = []
+        
+        for language, module_path, class_name in parser_configs:
+            try:
+                # Import the parser module
+                module = __import__(module_path, fromlist=[class_name])
+                parser_class = getattr(module, class_name)
+                
+                # Create parser instance
+                parser = parser_class(self.config)
+                
+                # Verify the parser is functional
+                if hasattr(parser, 'can_parse') and callable(parser.can_parse):
+                    # Register for all supported languages
+                    for lang in parser.supported_languages:
+                        self.parsers[lang] = parser
+                    
+                    successful_parsers.append((class_name, list(parser.supported_languages)))
+                    logger.debug(f"✅ Registered {class_name} for {list(parser.supported_languages)}")
+                else:
+                    failed_parsers.append((class_name, "Missing can_parse method"))
+                    logger.warning(f"❌ {class_name} missing can_parse method")
+                
+            except ImportError as e:
+                failed_parsers.append((class_name, f"Import error: {e}"))
+                logger.debug(f"❌ {class_name} not available: {e}")
+            except Exception as e:
+                failed_parsers.append((class_name, f"Initialization error: {e}"))
+                logger.warning(f"❌ Failed to register {class_name}: {e}")
+        
+        # Log summary
+        if successful_parsers:
+            total_languages = len(self.parsers)
+            logger.info(f"✅ Successfully registered {len(successful_parsers)} parsers for {total_languages} languages:")
+            for parser_name, languages in successful_parsers:
+                logger.info(f"   {parser_name}: {', '.join(languages)}")
+        
+        if failed_parsers:
+            logger.info(f"❌ Failed to register {len(failed_parsers)} parsers:")
+            for parser_name, error in failed_parsers:
+                logger.info(f"   {parser_name}: {error}")
+        
+        if not self.parsers:
+            logger.error("⚠️  No parsers were successfully registered!")
     
     def chunk_file(self, file_path: str, language: str = None, content: str = None) -> List[SemanticChunk]:
         """
@@ -86,76 +132,114 @@ class ChunkingEngine:
         return self.chunk_content(content, language, str(file_path))
     
     def chunk_content(self, content: str, language: str, file_path: str = "unknown") -> List[SemanticChunk]:
-        """
-        Chunk content string into semantic chunks.
-        
-        Args:
-            content: Content to chunk
-            language: Programming language
-            file_path: Source file path (for metadata)
-            
-        Returns:
-            List of SemanticChunk objects
-        """
-        import time
-        start_time = time.time()
-        
+        """Chunk content string into semantic chunks"""
         if not content.strip():
-            logger.debug(f"Empty content for {file_path}")
             return []
         
-        # Get appropriate chunker
-        file_extension = Path(file_path).suffix.lower()
-        chunker = self.registry.get_chunker(language, file_extension)
+        parser = self._get_parser(language)
+        if not parser:
+            error = f"No parser available for language: {language}"
+            self.stats['errors'].append(error)
+            logger.warning(f"⚠️  {error}")
+            raise UnsupportedLanguageError(error)
         
-        if chunker is None:
-            error_msg = f"No chunker available for language '{language}' and extension '{file_extension}'"
-            self.stats['errors'].append(error_msg)
-            raise UnsupportedLanguageError(error_msg)
-        
-        # Create parse context
         context = ParseContext(
             file_path=file_path,
             language=language,
             content_type=self._detect_content_type(file_path, language),
             max_chunk_size=self.config.max_chunk_size,
-            min_chunk_size=self.config.min_chunk_size,
-            enable_semantic_analysis=True,
-            enable_dependency_tracking=True
+            min_chunk_size=self.config.min_chunk_size
         )
         
-        # All chunkers use the modern parse_content interface
-        chunks = chunker.parse_content(content, context)
+        try:
+            start_time = time.time()
+            chunks = parser.parse(content, context)
+            end_time = time.time()
+            
+            processing_time = end_time - start_time
+            
+            self.stats['files_processed'] += 1
+            self.stats['chunks_created'] += len(chunks)
+            self._update_stats(parser, chunks, processing_time)
+            
+            logger.debug(f"✅ Chunked {file_path} into {len(chunks)} chunks using {parser.name}")
+            return chunks
+            
+        except Exception as e:
+            error = f"Error parsing {file_path} with {parser.name}: {e}"
+            self.stats['errors'].append(error)
+            logger.error(f"❌ {error}")
+            raise
+    
+    def _get_parser(self, language: str) -> Optional[BaseParser]:
+        """Get parser for language"""
+        parser = self.parsers.get(language)
+        if parser:
+            logger.debug(f"🔍 Using {parser.name} for language '{language}'")
+        else:
+            logger.debug(f"❌ No parser found for language '{language}'. Available: {list(self.parsers.keys())}")
+        return parser
+    
+    def _detect_language(self, file_path: Path) -> str:
+        """Detect language from file extension"""
+        extension = file_path.suffix.lower()
         
-        # Update statistics
-        processing_time = time.time() - start_time
-        self._update_stats(chunker, chunks, processing_time)
+        extension_map = {
+            '.py': 'python',
+            '.pyx': 'python',
+            '.pyi': 'python',
+            '.md': 'markdown',
+            '.markdown': 'markdown',
+            '.js': 'javascript',
+            '.jsx': 'javascript',
+            '.ts': 'typescript',
+            '.tsx': 'typescript',
+            '.rs': 'rust',
+            '.json': 'json',
+            '.html': 'html',
+            '.htm': 'html',
+            '.yaml': 'yaml',
+            '.yml': 'yaml',
+        }
         
-        chunker_name = getattr(chunker, 'name', chunker.__class__.__name__)
-        logger.debug(f"Chunked {file_path} into {len(chunks)} chunks using {chunker_name}")
-        return chunks
+        detected = extension_map.get(extension, 'text')
+        logger.debug(f"🔍 Detected language '{detected}' for extension '{extension}'")
+        return detected
     
     def _detect_content_type(self, file_path: str, language: str) -> ContentType:
-        """Detect content type from file and language"""
+        """Detect content type"""
         extension = Path(file_path).suffix.lower()
         
-        # Content type mapping
         if extension in {'.md', '.markdown'}:
             return ContentType.MARKDOWN
         elif extension in {'.html', '.htm'}:
             return ContentType.HTML
-        elif extension in {'.txt', '.rst'}:
-            return ContentType.PLAINTEXT
-        elif extension in {'.json'}:
+        elif extension == '.json':
             return ContentType.JSON
         elif extension in {'.yaml', '.yml'}:
             return ContentType.YAML
-        elif extension in {'.xml'}:
-            return ContentType.XML
-        elif language in {'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'cpp', 'c'}:
+        elif language in {'python', 'javascript', 'typescript', 'rust'}:
             return ContentType.CODE
         else:
             return ContentType.PLAINTEXT
+    
+    def _update_stats(self, parser: BaseParser, chunks: List[SemanticChunk], processing_time: float):
+        """Update internal statistics"""
+        self.stats['files_chunked'] += 1
+        self.stats['total_processing_time'] += processing_time
+        
+        # Track parser usage
+        parser_name = getattr(parser, 'name', parser.__class__.__name__)
+        if parser_name not in self.stats['chunker_usage']:
+            self.stats['chunker_usage'][parser_name] = {
+                'files_processed': 0,
+                'chunks_created': 0,
+                'total_time': 0.0
+            }
+        
+        self.stats['chunker_usage'][parser_name]['files_processed'] += 1
+        self.stats['chunker_usage'][parser_name]['chunks_created'] += len(chunks)
+        self.stats['chunker_usage'][parser_name]['total_time'] += processing_time
     
     def chunk_file_info(self, file_info: FileInfo, content: str = None) -> List[SemanticChunk]:
         """
@@ -176,34 +260,40 @@ class ChunkingEngine:
     
     def get_supported_languages(self) -> List[str]:
         """Get list of all supported languages"""
-        return self.registry.get_available_languages()
+        return list(self.parsers.keys())
     
     def get_supported_extensions(self) -> List[str]:
         """Get list of all supported file extensions"""
-        return self.registry.get_available_extensions()
+        extensions = set()
+        seen_parsers = set()
+        for parser in self.parsers.values():
+            parser_id = id(parser)
+            if parser_id not in seen_parsers:
+                extensions.update(parser.supported_extensions)
+                seen_parsers.add(parser_id)
+        return sorted(list(extensions))
     
     def can_chunk_language(self, language: str) -> bool:
         """Check if the engine can chunk the given language"""
-        return language in self.get_supported_languages()
+        return language in self.parsers
     
     def can_chunk_file(self, file_path: str) -> bool:
         """Check if the engine can chunk the given file"""
         file_path = Path(file_path)
-        extension = file_path.suffix.lower()
         language = self._detect_language(file_path)
-        
-        return self.registry.get_chunker(language, extension) is not None
+        return self.can_chunk_language(language)
     
     def get_chunker_for_language(self, language: str, file_extension: str = None):
-        """Get the chunker that would be used for a language/extension"""
-        return self.registry.get_chunker(language, file_extension)
+        """Get the parser that would be used for a language/extension"""
+        return self._get_parser(language)
     
     def get_statistics(self) -> Dict[str, Any]:
         """Get chunking statistics"""
         stats = self.stats.copy()
         
-        # Add registry information
-        stats['available_chunkers'] = len(self.registry._chunkers)
+        # Add parser information
+        unique_parsers = set(self.parsers.values())
+        stats['available_chunkers'] = len(unique_parsers)
         stats['supported_languages'] = len(self.get_supported_languages())
         stats['supported_extensions'] = len(self.get_supported_extensions())
         
@@ -220,69 +310,10 @@ class ChunkingEngine:
     def reset_statistics(self):
         """Reset all statistics"""
         self.stats = {
+            'files_processed': 0,
             'files_chunked': 0,
             'chunks_created': 0,
             'total_processing_time': 0.0,
             'chunker_usage': {},
             'errors': []
         }
-    
-    def _detect_language(self, file_path: Path) -> str:
-        """Detect programming language from file extension"""
-        extension = file_path.suffix.lower()
-        
-        language_map = {
-            '.py': 'python',
-            '.pyx': 'python', 
-            '.pyi': 'python',
-            '.js': 'javascript',
-            '.jsx': 'javascript',
-            '.ts': 'typescript',
-            '.tsx': 'typescript',
-            '.mjs': 'javascript',
-            '.html': 'html',
-            '.htm': 'html',
-            '.css': 'css',
-            '.md': 'markdown',
-            '.rst': 'rst',
-            '.txt': 'text',
-            '.rs': 'rust',
-            '.go': 'go',
-            '.java': 'java',
-            '.cpp': 'cpp',
-            '.cc': 'cpp',
-            '.cxx': 'cpp',
-            '.c': 'c',
-            '.h': 'c',
-            '.cs': 'csharp',
-            '.rb': 'ruby',
-            '.php': 'php',
-            '.swift': 'swift',
-            '.kt': 'kotlin',
-            '.scala': 'scala',
-            '.json': 'json',
-            '.yaml': 'yaml',
-            '.yml': 'yaml',
-            '.xml': 'xml',
-        }
-        
-        return language_map.get(extension, 'unknown')
-    
-    def _update_stats(self, chunker, chunks: List[SemanticChunk], processing_time: float):
-        """Update internal statistics"""
-        self.stats['files_chunked'] += 1
-        self.stats['chunks_created'] += len(chunks)
-        self.stats['total_processing_time'] += processing_time
-        
-        # Track chunker usage
-        chunker_name = getattr(chunker, 'name', chunker.__class__.__name__)
-        if chunker_name not in self.stats['chunker_usage']:
-            self.stats['chunker_usage'][chunker_name] = {
-                'files_processed': 0,
-                'chunks_created': 0,
-                'total_time': 0.0
-            }
-        
-        self.stats['chunker_usage'][chunker_name]['files_processed'] += 1
-        self.stats['chunker_usage'][chunker_name]['chunks_created'] += len(chunks)
-        self.stats['chunker_usage'][chunker_name]['total_time'] += processing_time

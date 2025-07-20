@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sample HTML page demonstrating semantic structure for chunking analysis">
+    <meta name="keywords" content="html, semantic, chunking, demo, structure">
+    <meta name="author" content="CodeRaptor Team">
+    <title>Semantic HTML Demo - Code Chunking Example</title>
+    
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="demo-page">
+    <header class="site-header" role="banner">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1 class="site-title">
+                        <a href="/" aria-label="Home">CodeRaptor</a>
+                    </h1>
+                    <span class="tagline">Intelligent Code Analysis</span>
+                </div>
+                
+                <nav class="main-navigation" role="navigation" aria-label="Main navigation">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#features" class="nav-link">Features</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#documentation" class="nav-link">Docs</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#examples" class="nav-link">Examples</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#contact" class="nav-link">Contact</a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="header-actions">
+                    <button class="btn btn-secondary" data-action="search">
+                        Search
+                    </button>
+                    <button class="btn btn-primary" data-action="get-started">
+                        Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content" role="main">
+        <section class="hero-section" id="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        Semantic Code Chunking for Modern Applications
+                    </h1>
+                    <p class="hero-description">
+                        Transform your code into intelligent, contextual chunks with our advanced 
+                        AST-based analysis system. Perfect for RAG applications, documentation, 
+                        and code understanding.
+                    </p>
+                    
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-large" data-action="start-demo">
+                            Try Interactive Demo
+                        </button>
+                        <a href="#documentation" class="btn btn-outline btn-large">
+                            View Documentation
+                        </a>
+                    </div>
+
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">15+</span>
+                            <span class="stat-label">Languages Supported</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">99.9%</span>
+                            <span class="stat-label">Accuracy</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">10k+</span>
+                            <span class="stat-label">Projects Using</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-visual">
+                    <div class="code-preview">
+                        <div class="code-header">
+                            <span class="code-lang">Python</span>
+                            <span class="code-filename">example.py</span>
+                        </div>
+                        <pre class="code-content"><code>class DataProcessor:
+    def __init__(self, config):
+        self.config = config
+    
+    async def process(self, data):
+        """Process data asynchronously."""
+        results = []
+        for item in data:
+            processed = await self.transform(item)
+            results.append(processed)
+        return results</code></pre>
+                        
+                        <div class="chunk-overlay">
+                            <div class="chunk-highlight chunk-class" data-chunk="class">
+                                <span class="chunk-label">Class Chunk</span>
+                            </div>
+                            <div class="chunk-highlight chunk-method" data-chunk="method">
+                                <span class="chunk-label">Method Chunk</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section" id="features">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Powerful Features</h2>
+                    <p class="section-description">
+                        Advanced capabilities that make code analysis effortless and precise.
+                    </p>
+                </header>
+
+                <div class="features-grid">
+                    <article class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z" 
+                                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">AST-Based Analysis</h3>
+                        <p class="feature-description">
+                            Uses tree-sitter parsers for accurate, language-aware code understanding 
+                            that goes beyond simple text splitting.
+                        </p>
+                        <ul class="feature-list">
+                            <li>Syntax-aware chunking</li>
+                            <li>Semantic relationship detection</li>
+                            <li>Dependency tracking</li>
+                        </ul>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" 
+                                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Multi-Language Support</h3>
+                        <p class="feature-description">
+                            Comprehensive support for modern programming languages with 
+                            specialized parsers for each language's unique features.
+                        </p>
+                        <ul class="feature-list">
+                            <li>Python, JavaScript, TypeScript</li>
+                            <li>Rust, Go, Java, C++</li>
+                            <li>Markdown, HTML, JSON</li>
+                        </ul>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" 
+                                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Semantic Enrichment</h3>
+                        <p class="feature-description">
+                            Rich metadata extraction including semantic tags, quality metrics, 
+                            and contextual relationships between code chunks.
+                        </p>
+                        <ul class="feature-list">
+                            <li>Automatic semantic tagging</li>
+                            <li>Quality scoring</li>
+                            <li>Dependency mapping</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="demo-section" id="demo">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Interactive Demo</h2>
+                    <p class="section-description">
+                        Try our chunking system with your own code or use our examples.
+                    </p>
+                </header>
+
+                <div class="demo-interface">
+                    <div class="demo-input">
+                        <div class="input-header">
+                            <label for="code-input" class="input-label">Input Code</label>
+                            <select class="language-selector" id="language-select">
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="rust">Rust</option>
+                                <option value="markdown">Markdown</option>
+                            </select>
+                        </div>
+                        <textarea 
+                            id="code-input" 
+                            class="code-textarea" 
+                            placeholder="Paste your code here or select an example..."
+                            rows="15"
+                        ></textarea>
+                        
+                        <div class="input-actions">
+                            <button class="btn btn-secondary" data-action="load-example">
+                                Load Example
+                            </button>
+                            <button class="btn btn-primary" data-action="analyze-code">
+                                Analyze Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="demo-output">
+                        <div class="output-header">
+                            <h3 class="output-label">Analysis Results</h3>
+                            <div class="output-stats">
+                                <span class="stat" id="chunk-count">0 chunks</span>
+                                <span class="stat" id="analysis-time">0ms</span>
+                            </div>
+                        </div>
+                        
+                        <div class="results-container" id="results">
+                            <div class="empty-state">
+                                <p>Analyze some code to see chunking results here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="documentation-section" id="documentation">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Documentation</h2>
+                    <p class="section-description">
+                        Everything you need to get started with semantic code chunking.
+                    </p>
+                </header>
+
+                <div class="docs-grid">
+                    <div class="docs-category">
+                        <h3 class="category-title">Getting Started</h3>
+                        <ul class="docs-list">
+                            <li><a href="#installation" class="doc-link">Installation Guide</a></li>
+                            <li><a href="#quickstart" class="doc-link">Quick Start Tutorial</a></li>
+                            <li><a href="#configuration" class="doc-link">Configuration Options</a></li>
+                            <li><a href="#examples" class="doc-link">Code Examples</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="docs-category">
+                        <h3 class="category-title">API Reference</h3>
+                        <ul class="docs-list">
+                            <li><a href="#chunking-engine" class="doc-link">ChunkingEngine</a></li>
+                            <li><a href="#semantic-chunks" class="doc-link">SemanticChunk</a></li>
+                            <li><a href="#parsers" class="doc-link">Language Parsers</a></li>
+                            <li><a href="#configuration-api" class="doc-link">Configuration API</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="docs-category">
+                        <h3 class="category-title">Advanced Topics</h3>
+                        <ul class="docs-list">
+                            <li><a href="#custom-parsers" class="doc-link">Custom Parsers</a></li>
+                            <li><a href="#semantic-analysis" class="doc-link">Semantic Analysis</a></li>
+                            <li><a href="#rag-integration" class="doc-link">RAG Integration</a></li>
+                            <li><a href="#performance" class="doc-link">Performance Tuning</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <aside class="sidebar" role="complementary">
+        <div class="sidebar-content">
+            <section class="quick-links">
+                <h3 class="sidebar-title">Quick Links</h3>
+                <ul class="quick-links-list">
+                    <li><a href="#github" class="quick-link">GitHub Repository</a></li>
+                    <li><a href="#pypi" class="quick-link">PyPI Package</a></li>
+                    <li><a href="#docs" class="quick-link">Full Documentation</a></li>
+                    <li><a href="#community" class="quick-link">Community Discord</a></li>
+                </ul>
+            </section>
+
+            <section class="recent-updates">
+                <h3 class="sidebar-title">Recent Updates</h3>
+                <div class="update-list">
+                    <article class="update-item">
+                        <time class="update-date">Jan 15, 2024</time>
+                        <h4 class="update-title">v1.2.0 Released</h4>
+                        <p class="update-summary">Added Rust and Go parser support</p>
+                    </article>
+                    <article class="update-item">
+                        <time class="update-date">Jan 10, 2024</time>
+                        <h4 class="update-title">Performance Improvements</h4>
+                        <p class="update-summary">30% faster chunking for large files</p>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">CodeRaptor</h4>
+                    <p class="footer-description">
+                        Advanced code analysis and chunking for modern applications.
+                    </p>
+                    <div class="social-links">
+                        <a href="#github" class="social-link" aria-label="GitHub">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                        <a href="#twitter" class="social-link" aria-label="Twitter">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="#documentation" class="footer-link">Documentation</a></li>
+                        <li><a href="#examples" class="footer-link">Examples</a></li>
+                        <li><a href="#tutorials" class="footer-link">Tutorials</a></li>
+                        <li><a href="#changelog" class="footer-link">Changelog</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-title">Community</h4>
+                    <ul class="footer-links">
+                        <li><a href="#discord" class="footer-link">Discord</a></li>
+                        <li><a href="#discussions" class="footer-link">GitHub Discussions</a></li>
+                        <li><a href="#issues" class="footer-link">Report Issues</a></li>
+                        <li><a href="#contributing" class="footer-link">Contributing</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4 class="footer-title">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="#privacy" class="footer-link">Privacy Policy</a></li>
+                        <li><a href="#terms" class="footer-link">Terms of Service</a></li>
+                        <li><a href="#license" class="footer-link">MIT License</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="copyright">
+                    © 2024 CodeRaptor Team. All rights reserved.
+                </p>
+                <p class="version-info">
+                    Version 1.2.0 • Built with ❤️ for developers
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+    <script src="scripts/demo.js"></script>
+</body>
+</html>

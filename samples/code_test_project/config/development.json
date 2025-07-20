@@ -1,0 +1,19 @@
+{
+  "environment": "development",
+  "debug": true,
+  "database": {
+    "path": "dev.db",
+    "echo_sql": true
+  },
+  "logging": {
+    "level": "DEBUG"
+  },
+  "server": {
+    "port": 8000,
+    "reload": true
+  },
+  "features": {
+    "enable_debug_routes": true,
+    "enable_profiling": true
+  }
+}

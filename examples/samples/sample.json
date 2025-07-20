@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2024-01-15T10:30:00Z",
+    "description": "Sample JSON file demonstrating various data structures for semantic chunking",
+    "author": "CodeRaptor Team",
+    "tags": ["sample", "demo", "json", "chunking"]
+  },
+  "configuration": {
+    "api": {
+      "base_url": "https://api.example.com/v1",
+      "timeout": 30000,
+      "retries": 3,
+      "rate_limit": {
+        "requests_per_minute": 100,
+        "burst_limit": 10
+      },
+      "endpoints": {
+        "users": "/users",
+        "posts": "/posts",
+        "comments": "/comments",
+        "analytics": "/analytics"
+      }
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "name": "sample_db",
+      "ssl": true,
+      "connection_pool": {
+        "min_connections": 5,
+        "max_connections": 20,
+        "idle_timeout": 300
+      }
+    },
+    "features": {
+      "enable_caching": true,
+      "enable_analytics": true,
+      "enable_debug_mode": false,
+      "experimental_features": [
+        "advanced_chunking",
+        "semantic_analysis",
+        "ml_suggestions"
+      ]
+    }
+  },
+  "users": [
+    {
+      "id": 1,
+      "username": "john_doe",
+      "email": "john.doe@example.com",
+      "profile": {
+        "first_name": "John",
+        "last_name": "Doe",
+        "age": 30,
+        "location": {
+          "city": "San Francisco",
+          "state": "CA",
+          "country": "USA",
+          "coordinates": {
+            "latitude": 37.7749,
+            "longitude": -122.4194
+          }
+        },
+        "preferences": {
+          "theme": "dark",
+          "language": "en",
+          "notifications": {
+            "email": true,
+            "push": false,
+            "sms": false
+          },
+          "privacy": {
+            "profile_visibility": "public",
+            "search_indexing": true,
+            "data_sharing": false
+          }
+        }
+      },
+      "activity": {
+        "last_login": "2024-01-15T09:45:00Z",
+        "login_count": 247,
+        "posts_created": 15,
+        "comments_made": 42,
+        "liked_posts": [3, 7, 12, 18, 23],
+        "followed_users": [2, 5, 8, 11]
+      },
+      "subscription": {
+        "plan": "premium",
+        "status": "active",
+        "billing": {
+          "amount": 29.99,
+          "currency": "USD",
+          "interval": "monthly",
+          "next_billing_date": "2024-02-15T00:00:00Z"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "username": "jane_smith",
+      "email": "jane.smith@example.com",
+      "profile": {
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "age": 28,
+        "location": {
+          "city": "New York",
+          "state": "NY",
+          "country": "USA",
+          "coordinates": {
+            "latitude": 40.7128,
+            "longitude": -74.0060
+          }
+        },
+        "preferences": {
+          "theme": "light",
+          "language": "en",
+          "notifications": {
+            "email": true,
+            "push": true,
+            "sms": true
+          },
+          "privacy": {
+            "profile_visibility": "friends",
+            "search_indexing": false,
+            "data_sharing": true
+          }
+        }
+      },
+      "activity": {
+        "last_login": "2024-01-14T18:20:00Z",
+        "login_count": 156,
+        "posts_created": 23,
+        "comments_made": 67,
+        "liked_posts": [1, 5, 9, 14, 19, 25],
+        "followed_users": [1, 3, 6, 9, 12, 15]
+      },
+      "subscription": {
+        "plan": "basic",
+        "status": "active",
+        "billing": {
+          "amount": 9.99,
+          "currency": "USD",
+          "interval": "monthly",
+          "next_billing_date": "2024-02-10T00:00:00Z"
+        }
+      }
+    }
+  ],
+  "posts": [
+    {
+      "id": 1,
+      "title": "Getting Started with Semantic Chunking",
+      "content": "Semantic chunking is a powerful technique for breaking down code and documents into meaningful, contextual pieces. This approach goes beyond simple text splitting...",
+      "author_id": 1,
+      "created_at": "2024-01-10T14:30:00Z",
+      "updated_at": "2024-01-10T14:30:00Z",
+      "status": "published",
+      "visibility": "public",
+      "tags": ["tutorial", "chunking", "semantic-analysis"],
+      "metadata": {
+        "reading_time": 5,
+        "word_count": 1250,
+        "language": "en",
+        "seo": {
+          "meta_description": "Learn the basics of semantic chunking for better content organization",
+          "keywords": ["semantic chunking", "content organization", "tutorial"]
+        }
+      },
+      "engagement": {
+        "views": 1247,
+        "likes": 89,
+        "shares": 23,
+        "comments": 15,
+        "bookmarks": 34
+      }
+    },
+    {
+      "id": 2,
+      "title": "Advanced Tree-sitter Parsing Techniques",
+      "content": "Tree-sitter provides powerful AST-based parsing capabilities that enable sophisticated code analysis. In this deep dive, we'll explore advanced techniques...",
+      "author_id": 2,
+      "created_at": "2024-01-12T11:15:00Z",
+      "updated_at": "2024-01-13T09:20:00Z",
+      "status": "published",
+      "visibility": "public",
+      "tags": ["advanced", "tree-sitter", "parsing", "ast"],
+      "metadata": {
+        "reading_time": 12,
+        "word_count": 3200,
+        "language": "en",
+        "seo": {
+          "meta_description": "Advanced techniques for tree-sitter parsing and AST manipulation",
+          "keywords": ["tree-sitter", "AST", "parsing", "advanced techniques"]
+        }
+      },
+      "engagement": {
+        "views": 2156,
+        "likes": 156,
+        "shares": 67,
+        "comments": 28,
+        "bookmarks": 89
+      }
+    }
+  ],
+  "analytics": {
+    "summary": {
+      "total_users": 2,
+      "active_users": 2,
+      "total_posts": 2,
+      "total_views": 3403,
+      "total_engagement": {
+        "likes": 245,
+        "shares": 90,
+        "comments": 43,
+        "bookmarks": 123
+      }
+    },
+    "time_series": {
+      "daily_active_users": [
+        {
+          "date": "2024-01-10",
+          "count": 1,
+          "new_users": 0
+        },
+        {
+          "date": "2024-01-11",
+          "count": 1,
+          "new_users": 0
+        },
+        {
+          "date": "2024-01-12",
+          "count": 2,
+          "new_users": 1
+        },
+        {
+          "date": "2024-01-13",
+          "count": 2,
+          "new_users": 0
+        },
+        {
+          "date": "2024-01-14",
+          "count": 2,
+          "new_users": 0
+        },
+        {
+          "date": "2024-01-15",
+          "count": 1,
+          "new_users": 0
+        }
+      ],
+      "content_performance": [
+        {
+          "post_id": 1,
+          "daily_views": [
+            {"date": "2024-01-10", "views": 247},
+            {"date": "2024-01-11", "views": 156},
+            {"date": "2024-01-12", "views": 298},
+            {"date": "2024-01-13", "views": 189},
+            {"date": "2024-01-14", "views": 234},
+            {"date": "2024-01-15", "views": 123}
+          ]
+        },
+        {
+          "post_id": 2,
+          "daily_views": [
+            {"date": "2024-01-12", "views": 345},
+            {"date": "2024-01-13", "views": 567},
+            {"date": "2024-01-14", "views": 678},
+            {"date": "2024-01-15", "views": 566}
+          ]
+        }
+      ]
+    },
+    "user_segments": {
+      "by_subscription": {
+        "basic": {
+          "count": 1,
+          "percentage": 50.0,
+          "avg_engagement": 8.5
+        },
+        "premium": {
+          "count": 1,
+          "percentage": 50.0,
+          "avg_engagement": 12.3
+        }
+      },
+      "by_activity": {
+        "highly_active": {
+          "threshold": "login_count

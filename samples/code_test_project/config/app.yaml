@@ -1,0 +1,37 @@
+# Application Configuration
+
+database:
+  path: "app.db"
+  pool_size: 10
+  timeout: 30
+
+auth:
+  secret_key: "your-secret-key-here"
+  token_expiry_hours: 24
+  bcrypt_rounds: 12
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "app.log"
+  max_size_mb: 10
+  backup_count: 5
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+
+features:
+  enable_search: true
+  enable_file_upload: true
+  enable_admin_panel: true
+  max_file_size_mb: 10
+
+cache:
+  type: "memory"  # memory, redis, memcached
+  ttl_seconds: 3600
+  max_size: 1000

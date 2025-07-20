@@ -1,16 +1,15 @@
 # src/chuk_code_raptor/chunking/semantic_chunk.py
-#!/usr/bin/env python3
 """
-Semantic Chunk Model
-====================
+Enhanced Semantic Chunk Model
+=============================
 
-Base semantic chunk model that can represent any type of content with
-semantic understanding, relationships, and quality metrics.
+Enhanced semantic chunk model with future-ready foundations:
+- Content-addressable fingerprints for Merkle tree support
+- Graph-ready relationships for property graphs
+- Embedding support for vector search
+- Change tracking for incremental updates
 
-Supports:
-- SemanticChunk: Base semantic-aware chunk
-- SemanticCodeChunk: Code-specific semantic chunk (extends CodeChunk)
-- SemanticDocumentChunk: Document-specific semantic chunk
+Language-agnostic foundation for all semantic-aware chunks.
 """
 
 from datetime import datetime
@@ -19,25 +18,41 @@ from typing import Dict, List, Optional, Any, Set, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import hashlib
+import json
 
 # Import base models
-from chuk_code_raptor.core.models import CodeChunk, ChunkType
+from chuk_code_raptor.core.models import ChunkType
 
 @dataclass
 class ChunkRelationship:
-    """Represents a relationship between chunks"""
+    """Enhanced relationship between chunks with graph integration support"""
     source_chunk_id: str
     target_chunk_id: str
     relationship_type: str  # depends_on, calls, imports, references, contains, similar, related
     strength: float = 1.0   # Relationship strength (0.0-1.0)
+    context: str = ""       # How/where the relationship occurs
+    line_number: Optional[int] = None  # Location of relationship
     metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    def to_graph_edge(self) -> Dict[str, Any]:
+        """Convert to graph edge format for future property graph integration"""
+        return {
+            'source': self.source_chunk_id,
+            'target': self.target_chunk_id,
+            'type': self.relationship_type,
+            'weight': self.strength,
+            'context': self.context,
+            'line': self.line_number,
+            'metadata': self.metadata
+        }
 
 @dataclass
 class SemanticTag:
-    """A semantic tag for chunk categorization"""
+    """Enhanced semantic tag with confidence and source tracking"""
     name: str
     confidence: float = 1.0
-    source: str = "manual"  # manual, ast, pattern, ml, nlp
+    source: str = "manual"  # manual, ast, pattern, ml, nlp, analysis
+    category: str = "general"  # general, pattern, architecture, quality, complexity
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 class QualityMetric(Enum):
@@ -48,6 +63,11 @@ class QualityMetric(Enum):
     REUSABILITY = "reusability"
     COMPLEXITY = "complexity"
     READABILITY = "readability"
+    DOCUMENTATION_QUALITY = "documentation_quality"
+    TYPE_SAFETY = "type_safety"
+    ERROR_HANDLING = "error_handling"
+    MAINTAINABILITY = "maintainability"
+    TESTABILITY = "testability"
 
 class ContentType(Enum):
     """Types of content in chunks"""
@@ -60,12 +80,31 @@ class ContentType(Enum):
     YAML = "yaml"
     XML = "xml"
 
+class ChunkComplexity(Enum):
+    """Complexity levels for chunks"""
+    SIMPLE = "simple"
+    MODERATE = "moderate"
+    COMPLEX = "complex"
+    VERY_COMPLEX = "very_complex"
+
+@dataclass
+class CodePattern:
+    """Detected code pattern with confidence"""
+    pattern_name: str
+    confidence: float
+    evidence: List[str]
+    category: str  # design_pattern, functional_pattern, architectural_pattern
+
 @dataclass
 class SemanticChunk:
     """
-    Base semantic chunk with relationships, dependencies, and quality metrics.
+    Enhanced semantic chunk with future-ready foundations.
     
-    This is the foundation for all semantic-aware chunks, supporting any content type.
+    Key improvements:
+    - Content fingerprinting for change detection
+    - Graph-ready relationships  
+    - Embedding support
+    - Quality scoring framework
     """
     
     # === Core Properties ===
@@ -77,12 +116,16 @@ class SemanticChunk:
     content_type: ContentType
     language: Optional[str] = None
     
+    # === Chunk Type and Classification ===
+    chunk_type: ChunkType = ChunkType.TEXT_BLOCK
+    complexity_level: ChunkComplexity = ChunkComplexity.SIMPLE
+    
     # === Content Analysis ===
     content_hash: str = field(init=False)
     character_count: int = field(init=False)
     word_count: int = field(init=False)
     
-    # === Relationships and Dependencies ===
+    # === Enhanced Relationships and Dependencies ===
     dependencies: List[str] = field(default_factory=list)
     dependents: List[str] = field(default_factory=list)
     references: List[str] = field(default_factory=list)
@@ -90,21 +133,38 @@ class SemanticChunk:
     
     # === Semantic Information ===
     semantic_tags: List[SemanticTag] = field(default_factory=list)
+    detected_patterns: List[CodePattern] = field(default_factory=list)
     summary: Optional[str] = None
     keywords: List[str] = field(default_factory=list)
     
     # === Context Awareness ===
     context_chunks: List[str] = field(default_factory=list)
+    parent_context: Optional[str] = None  # Parent class/module context
     scope_level: int = 0
     namespace: Optional[str] = None
     
     # === Quality Metrics ===
     quality_scores: Dict[str, float] = field(default_factory=dict)
+    importance_score: float = 0.5
     
-    # === Neural Features ===
+    # === Future-Ready Features ===
+    
+    # Content fingerprinting for Merkle trees
+    content_fingerprint: Optional[str] = field(init=False)
+    dependency_fingerprint: Optional[str] = field(init=False)
+    combined_fingerprint: Optional[str] = field(init=False)
+    
+    # Change tracking
+    version: int = 1
+    last_modified: datetime = field(default_factory=datetime.now)
+    
+    # Embedding support
     semantic_embedding: Optional[List[float]] = None
     embedding_model: Optional[str] = None
-    similarity_scores: Dict[str, float] = field(default_factory=dict)
+    embedding_version: int = 1
+    
+    # Graph integration preparation  
+    graph_node_id: Optional[str] = field(init=False)
     
     # === Metadata ===
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -112,10 +172,149 @@ class SemanticChunk:
     updated_at: datetime = field(default_factory=datetime.now)
     
     def __post_init__(self):
-        """Calculate derived properties"""
+        """Enhanced post-initialization with fingerprinting"""
         self.content_hash = hashlib.md5(self.content.encode('utf-8')).hexdigest()
         self.character_count = len(self.content)
         self.word_count = len(self.content.split())
+        
+        # Create fingerprints for change detection
+        self._create_fingerprints()
+        
+        # Set graph node ID
+        self.graph_node_id = f"node_{self.id}"
+        
+        # Basic complexity detection
+        self._detect_basic_complexity()
+    
+    def _create_fingerprints(self):
+        """Create content-addressable fingerprints for Merkle tree support"""
+        # Content fingerprint
+        self.content_fingerprint = hashlib.sha256(self.content.encode('utf-8')).hexdigest()
+        
+        # Dependency fingerprint (for change propagation)
+        deps_str = json.dumps(sorted(self.dependencies), sort_keys=True)
+        self.dependency_fingerprint = hashlib.sha256(deps_str.encode('utf-8')).hexdigest()
+        
+        # Combined fingerprint for quick comparison
+        combined_data = f"{self.content_fingerprint}:{self.dependency_fingerprint}:{self.chunk_type.value}"
+        self.combined_fingerprint = hashlib.sha256(combined_data.encode('utf-8')).hexdigest()
+    
+    def _detect_basic_complexity(self):
+        """Detect basic complexity indicators"""
+        complexity_score = 0
+        
+        # Line count factor
+        if self.line_count > 50:
+            complexity_score += 2
+        elif self.line_count > 20:
+            complexity_score += 1
+        
+        # Nesting indicators (braces, indentation)
+        complexity_score += self.content.count('{')
+        complexity_score += self.content.count('(')
+        complexity_score += len([line for line in self.content.split('\n') if len(line) - len(line.lstrip()) > 8])
+        
+        # Classify complexity level
+        if complexity_score <= 2:
+            self.complexity_level = ChunkComplexity.SIMPLE
+        elif complexity_score <= 5:
+            self.complexity_level = ChunkComplexity.MODERATE
+        elif complexity_score <= 10:
+            self.complexity_level = ChunkComplexity.COMPLEX
+        else:
+            self.complexity_level = ChunkComplexity.VERY_COMPLEX
+    
+    # === Change Detection & Merkle Support ===
+    
+    def has_changed(self, other_fingerprint: str) -> bool:
+        """Check if content has changed (Merkle tree support)"""
+        return self.combined_fingerprint != other_fingerprint
+    
+    def has_content_changed(self, other_content_fingerprint: str) -> bool:
+        """Check if just content has changed"""
+        return self.content_fingerprint != other_content_fingerprint
+    
+    def has_dependencies_changed(self, other_dependency_fingerprint: str) -> bool:
+        """Check if dependencies have changed"""
+        return self.dependency_fingerprint != other_dependency_fingerprint
+    
+    def update_fingerprints(self):
+        """Update fingerprints after changes"""
+        self._create_fingerprints()
+        self.version += 1
+        self.last_modified = datetime.now()
+        self.updated_at = datetime.now()
+    
+    # === Graph Integration Support ===
+    
+    def add_relationship(self, target_chunk_id: str, relationship_type: str, 
+                        strength: float = 1.0, context: str = "", 
+                        line_number: Optional[int] = None):
+        """Add an enhanced relationship with graph support"""
+        if target_chunk_id not in self.dependencies:
+            self.dependencies.append(target_chunk_id)
+        
+        relationship = ChunkRelationship(
+            source_chunk_id=self.id,
+            target_chunk_id=target_chunk_id,
+            relationship_type=relationship_type,
+            strength=strength,
+            context=context,
+            line_number=line_number
+        )
+        self.relationships.append(relationship)
+        self.update_fingerprints()  # Update fingerprints when relationships change
+    
+    def get_graph_edges(self) -> List[Dict[str, Any]]:
+        """Get all relationships as graph edges for property graph integration"""
+        return [rel.to_graph_edge() for rel in self.relationships]
+    
+    # === Embedding Support ===
+    
+    def set_embedding(self, embedding: List[float], model: str, version: int = 1):
+        """Set semantic embedding with versioning"""
+        self.semantic_embedding = embedding
+        self.embedding_model = model
+        self.embedding_version = version
+        self.updated_at = datetime.now()
+    
+    def needs_embedding_update(self, current_model: str, current_version: int) -> bool:
+        """Check if embedding needs updating"""
+        return (
+            self.semantic_embedding is None or
+            self.embedding_model != current_model or
+            self.embedding_version < current_version
+        )
+    
+    def get_embedding_text(self, include_context: bool = True) -> str:
+        """Get text optimized for embedding generation"""
+        parts = []
+        
+        # Add semantic context
+        if self.chunk_type:
+            parts.append(f"[{self.chunk_type.value.upper()}]")
+        
+        # Add high-confidence tags
+        high_conf_tags = self.high_confidence_tags
+        if high_conf_tags:
+            parts.append(f"Tags: {', '.join(high_conf_tags[:5])}")  # Top 5 tags
+        
+        # Add detected patterns
+        if self.detected_patterns:
+            pattern_names = [p.pattern_name for p in self.detected_patterns]
+            parts.append(f"Patterns: {', '.join(pattern_names)}")
+        
+        # Add the actual content
+        parts.append(self.content)
+        
+        # Add dependency context if requested
+        if include_context and self.dependencies:
+            deps = [dep for dep in self.dependencies[:3]]  # Top 3
+            parts.append(f"Dependencies: {', '.join(deps)}")
+        
+        return "\n".join(parts)
+    
+    # === Enhanced Properties ===
     
     @property
     def line_count(self) -> int:
@@ -124,38 +323,63 @@ class SemanticChunk:
     
     @property
     def content_preview(self) -> str:
-        """Get preview of content"""
+        """Get enhanced preview of content"""
         if len(self.content) <= 200:
             return self.content
-        return self.content[:197] + "..."
-    
-    def add_dependency(self, chunk_id: str, relationship_type: str = "depends_on", 
-                      strength: float = 1.0, metadata: Dict[str, Any] = None):
-        """Add a dependency relationship"""
-        if chunk_id not in self.dependencies:
-            self.dependencies.append(chunk_id)
         
-        relationship = ChunkRelationship(
-            source_chunk_id=self.id,
-            target_chunk_id=chunk_id,
-            relationship_type=relationship_type,
-            strength=strength,
-            metadata=metadata or {}
-        )
-        self.relationships.append(relationship)
-        self.updated_at = datetime.now()
+        # Try to end at a natural boundary
+        preview = self.content[:197]
+        
+        # Find last complete line or sentence
+        last_newline = preview.rfind('\n')
+        last_sentence = max(preview.rfind('.'), preview.rfind('!'), preview.rfind('?'))
+        
+        if last_newline > 150:
+            preview = preview[:last_newline]
+        elif last_sentence > 150:
+            preview = preview[:last_sentence + 1]
+        
+        return preview + "..."
+    
+    @property
+    def is_complex(self) -> bool:
+        """Check if chunk is complex"""
+        return self.complexity_level in [ChunkComplexity.COMPLEX, ChunkComplexity.VERY_COMPLEX]
+    
+    @property
+    def has_semantic_embedding(self) -> bool:
+        """Check if chunk has semantic embedding"""
+        return self.semantic_embedding is not None and len(self.semantic_embedding) > 0
+    
+    @property
+    def tag_names(self) -> List[str]:
+        """Get list of semantic tag names"""
+        return [tag.name for tag in self.semantic_tags]
+    
+    @property
+    def high_confidence_tags(self) -> List[str]:
+        """Get tags with high confidence (>0.8)"""
+        return [tag.name for tag in self.semantic_tags if tag.confidence > 0.8]
+    
+    # === Quality Management ===
     
     def add_semantic_tag(self, name: str, confidence: float = 1.0, 
-                        source: str = "manual", metadata: Dict[str, Any] = None):
-        """Add a semantic tag"""
+                        source: str = "manual", category: str = "general",
+                        metadata: Dict[str, Any] = None):
+        """Add an enhanced semantic tag"""
         tag = SemanticTag(
             name=name,
             confidence=confidence,
             source=source,
+            category=category,
             metadata=metadata or {}
         )
         self.semantic_tags.append(tag)
         self.updated_at = datetime.now()
+    
+    def add_tag(self, name: str, confidence: float = 1.0, source: str = "manual"):
+        """Alias for add_semantic_tag for compatibility"""
+        self.add_semantic_tag(name, confidence, source)
     
     def set_quality_score(self, metric: QualityMetric, score: float):
         """Set a quality score for this chunk"""
@@ -166,182 +390,84 @@ class SemanticChunk:
         """Get quality score for a metric"""
         return self.quality_scores.get(metric.value, 0.0)
     
-    @property
-    def tag_names(self) -> List[str]:
-        """Get list of semantic tag names"""
-        return [tag.name for tag in self.semantic_tags]
-    
-    @property
-    def has_semantic_embedding(self) -> bool:
-        """Check if chunk has semantic embedding"""
-        return self.semantic_embedding is not None and len(self.semantic_embedding) > 0
-
-@dataclass  
-class SemanticCodeChunk(SemanticChunk):
-    """
-    Semantic chunk specifically for code content.
-    Extends SemanticChunk with code-specific features.
-    """
-    
-    # === Code-Specific Properties ===
-    chunk_type: ChunkType = ChunkType.TEXT_BLOCK
-    accessibility: str = "public"  # public/private/protected
-    
-    # === Code Analysis ===
-    imports: List[str] = field(default_factory=list)
-    exports: List[str] = field(default_factory=list)
-    function_calls: List[str] = field(default_factory=list)
-    variables_used: List[str] = field(default_factory=list)
-    types_used: List[str] = field(default_factory=list)
-    ast_node_path: Optional[str] = None
-    code_patterns: List[str] = field(default_factory=list)
-    
-    def __post_init__(self):
-        """Initialize code chunk"""
-        super().__post_init__()
-        if not self.content_type:
-            self.content_type = ContentType.CODE
-    
-    def calculate_coupling_score(self) -> float:
-        """Calculate coupling score based on dependencies"""
-        if not self.dependencies and not self.dependents:
-            return 0.0
+    def calculate_overall_quality_score(self) -> float:
+        """Calculate overall quality score from all metrics"""
+        if not self.quality_scores:
+            return self.importance_score
         
-        total_connections = len(self.dependencies) + len(self.dependents)
-        return min(total_connections / 20.0, 1.0)
-    
-    def calculate_reusability_score(self) -> float:
-        """Calculate reusability based on coupling and completeness"""
-        coupling = self.calculate_coupling_score()
-        completeness = self.get_quality_score(QualityMetric.COMPLETENESS)
-        return max(0.0, completeness - (coupling * 0.5))
-    
-    @property
-    def is_highly_coupled(self) -> bool:
-        """Check if chunk is highly coupled"""
-        return self.calculate_coupling_score() > 0.7
-    
-    @property
-    def is_reusable(self) -> bool:
-        """Check if chunk is reusable"""
-        return self.calculate_reusability_score() > 0.6
-    
-    @classmethod
-    def from_code_chunk(cls, chunk: CodeChunk) -> 'SemanticCodeChunk':
-        """Create SemanticCodeChunk from existing CodeChunk"""
-        return cls(
-            id=chunk.id,
-            file_path=chunk.file_path,
-            content=chunk.content,
-            start_line=chunk.start_line,
-            end_line=chunk.end_line,
-            content_type=ContentType.CODE,
-            language=chunk.language,
-            chunk_type=chunk.chunk_type,
-            summary=chunk.summary,
-            keywords=chunk.keywords,
-            semantic_embedding=chunk.embedding,
-            embedding_model=chunk.embedding_model,
-            metadata=chunk.metadata,
-            created_at=chunk.created_at,
-            updated_at=chunk.updated_at
-        )
-
-@dataclass
-class SemanticDocumentChunk(SemanticChunk):
-    """
-    Semantic chunk specifically for document content.
-    Extends SemanticChunk with document-specific features.
-    """
-    
-    # === Document-Specific Properties ===
-    section_type: str = "paragraph"  # heading, paragraph, list, table, code_block
-    heading_level: Optional[int] = None  # For headings (1-6)
-    
-    # === Document Analysis ===
-    entities: List[str] = field(default_factory=list)        # Named entities
-    topics: List[str] = field(default_factory=list)          # Extracted topics
-    document_structure: Dict[str, Any] = field(default_factory=dict)
-    cross_references: List[str] = field(default_factory=list)  # Links to other sections
-    
-    def __post_init__(self):
-        """Initialize document chunk"""
-        super().__post_init__()
-        if self.content_type == ContentType.CODE:  # Don't override if explicitly set
-            self.content_type = ContentType.DOCUMENTATION
-    
-    def calculate_readability_score(self) -> float:
-        """Calculate readability score based on measurable text properties"""
-        # Use actual readability metrics, not arbitrary thresholds
+        # Weight different quality metrics
+        weights = {
+            QualityMetric.DOCUMENTATION_QUALITY.value: 0.2,
+            QualityMetric.COMPLEXITY.value: 0.2,
+            QualityMetric.READABILITY.value: 0.2,
+            QualityMetric.MAINTAINABILITY.value: 0.2,
+            QualityMetric.COMPLETENESS.value: 0.2
+        }
         
-        # Sentence count
-        sentence_endings = self.content.count('.') + self.content.count('!') + self.content.count('?')
-        if sentence_endings == 0:
-            return 0.0
+        weighted_score = 0.0
+        total_weight = 0.0
         
-        # Average sentence length (words per sentence)
-        avg_sentence_length = self.word_count / sentence_endings
+        for metric, weight in weights.items():
+            if metric in self.quality_scores:
+                weighted_score += self.quality_scores[metric] * weight
+                total_weight += weight
         
-        # Simple readability based on sentence complexity
-        # Shorter sentences are generally more readable
-        if avg_sentence_length <= 15:
-            return 0.9  # Very readable
-        elif avg_sentence_length <= 25:
-            return 0.7  # Moderately readable
-        elif avg_sentence_length <= 35:
-            return 0.5  # Complex
+        if total_weight > 0:
+            return weighted_score / total_weight
         else:
-            return 0.3  # Very complex
+            return self.importance_score
     
-    def calculate_structure_consistency(self) -> float:
-        """Calculate how well this chunk follows expected structural patterns"""
-        if self.is_heading:
-            # Check if heading follows common patterns
-            content_clean = self.content.strip()
-            
-            # Good headings are typically 3-80 characters
-            if 3 <= len(content_clean) <= 80:
-                score = 0.8
-            else:
-                score = 0.4
-            
-            # Bonus for proper heading markers in markdown
-            if content_clean.startswith('#'):
-                score += 0.2
-            
-            return min(score, 1.0)
-        
-        elif self.section_type == "code_block":
-            # Code blocks should have some language indicators
-            if '```' in self.content or any(keyword in self.content.lower() 
-                                          for keyword in ['def ', 'function', 'class ', 'import']):
-                return 0.9
-            else:
-                return 0.5
-        
-        else:
-            # For regular content, check for basic structure
-            has_sentences = any(end in self.content for end in '.!?')
-            has_words = self.word_count > 0
-            
-            if has_sentences and has_words:
-                return 0.7
-            elif has_words:
-                return 0.5
-            else:
-                return 0.1
-    
-    @property
-    def is_heading(self) -> bool:
-        """Check if this chunk is a heading"""
-        return self.section_type == "heading"
-    
-    @property
-    def is_code_block(self) -> bool:
-        """Check if this chunk is a code block"""
-        return self.section_type == "code_block"
+    def get_summary_info(self) -> Dict[str, Any]:
+        """Get comprehensive summary information"""
+        return {
+            'id': self.id,
+            'type': self.chunk_type.value,
+            'complexity': self.complexity_level.value,
+            'quality_score': self.calculate_overall_quality_score(),
+            'importance': self.importance_score,
+            'size': {
+                'characters': self.character_count,
+                'lines': self.line_count,
+                'words': self.word_count
+            },
+            'fingerprints': {
+                'content': self.content_fingerprint[:8] if self.content_fingerprint else None,
+                'combined': self.combined_fingerprint[:8] if self.combined_fingerprint else None,
+            },
+            'patterns': [p.pattern_name for p in self.detected_patterns],
+            'high_confidence_tags': self.high_confidence_tags,
+            'dependencies_count': len(self.dependencies),
+            'relationships_count': len(self.relationships),
+            'has_embedding': self.has_semantic_embedding,
+            'version': self.version
+        }
 
 # Utility functions
+
+def create_chunk_id(file_path: str, start_line: int, chunk_type: ChunkType, 
+                   identifier: str = None) -> str:
+    """
+    Create unique chunk ID from components.
+    """
+    from pathlib import Path
+    
+    # Get just the filename without path
+    file_name = Path(file_path).stem
+    
+    # Get chunk type string
+    type_str = chunk_type.value if hasattr(chunk_type, 'value') else str(chunk_type)
+    
+    # Clean identifier if provided
+    if identifier:
+        # Remove special characters and make safe for ID
+        clean_identifier = "".join(c for c in identifier if c.isalnum() or c in '_-').strip()
+        if not clean_identifier:
+            clean_identifier = "chunk"
+    else:
+        clean_identifier = "chunk"
+    
+    # Create ID in format: filename:type:identifier:line
+    return f"{file_name}:{type_str}:{clean_identifier}:{start_line}"
 
 def calculate_chunk_similarity(chunk1: SemanticChunk, chunk2: SemanticChunk, 
                              method: str = "content") -> float:
@@ -396,139 +522,3 @@ def find_related_chunks(target_chunk: SemanticChunk, all_chunks: List[SemanticCh
     
     similarities.sort(key=lambda x: x[0], reverse=True)
     return [chunk for _, chunk in similarities[:max_results]]
-
-def create_chunk_for_content_type(content_type: ContentType, **kwargs) -> SemanticChunk:
-    """Factory function to create appropriate chunk type based on content"""
-    
-    if content_type == ContentType.CODE:
-        return SemanticCodeChunk(content_type=content_type, **kwargs)
-    elif content_type in [ContentType.DOCUMENTATION, ContentType.MARKDOWN, ContentType.HTML]:
-        return SemanticDocumentChunk(content_type=content_type, **kwargs)
-    else:
-        return SemanticChunk(content_type=content_type, **kwargs)
-
-# Quality analysis functions
-
-def calculate_code_quality_metrics(chunk: SemanticCodeChunk) -> Dict[str, float]:
-    """Calculate quality metrics specific to code chunks"""
-    metrics = {}
-    
-    # Only calculate objectively measurable metrics
-    
-    # Dependency coupling (actual measurable coupling)
-    metrics['coupling'] = chunk.calculate_coupling_score()
-    
-    # Import-to-content ratio (how much external dependencies vs internal logic)
-    if chunk.imports:
-        import_ratio = len(chunk.imports) / max(chunk.line_count, 1)
-        metrics['import_density'] = min(import_ratio, 1.0)
-    else:
-        metrics['import_density'] = 0.0
-    
-    # Function call density (how much this chunk calls other functions)
-    if chunk.function_calls:
-        call_density = len(chunk.function_calls) / max(chunk.line_count, 1)
-        metrics['call_density'] = min(call_density, 1.0)
-    else:
-        metrics['call_density'] = 0.0
-    
-    # Comment-to-code ratio (if we can detect comments)
-    comment_lines = chunk.content.count('#')  # Simple heuristic for Python
-    if comment_lines > 0:
-        comment_ratio = comment_lines / max(chunk.line_count, 1)
-        metrics['comment_ratio'] = min(comment_ratio, 1.0)
-    else:
-        metrics['comment_ratio'] = 0.0
-    
-    # Pattern complexity (number of detected patterns)
-    if chunk.code_patterns:
-        metrics['pattern_complexity'] = min(len(chunk.code_patterns) / 5.0, 1.0)
-    else:
-        metrics['pattern_complexity'] = 0.0
-    
-    return metrics
-
-def calculate_document_quality_metrics(chunk: SemanticDocumentChunk) -> Dict[str, float]:
-    """Calculate quality metrics specific to document chunks"""
-    metrics = {}
-    
-    # Only calculate metrics that can be objectively measured
-    
-    # Information density (actual keywords to content ratio)
-    if chunk.keywords:
-        keyword_density = len(chunk.keywords) / max(chunk.word_count, 1)
-        metrics['keyword_density'] = min(keyword_density, 1.0)
-    else:
-        metrics['keyword_density'] = 0.0
-    
-    # Cross-reference connectivity (how connected this chunk is)
-    if chunk.cross_references:
-        metrics['connectivity'] = min(len(chunk.cross_references) / 10.0, 1.0)
-    else:
-        metrics['connectivity'] = 0.0
-    
-    # Entity density (named entities per word)
-    if chunk.entities:
-        entity_density = len(chunk.entities) / max(chunk.word_count, 1)
-        metrics['entity_density'] = min(entity_density, 1.0)
-    else:
-        metrics['entity_density'] = 0.0
-    
-    # Structural consistency (if it follows expected patterns for its type)
-    if chunk.is_heading and chunk.heading_level:
-        # Heading has appropriate length for its level
-        expected_range = {1: (5, 60), 2: (10, 80), 3: (10, 100)}
-        if chunk.heading_level in expected_range:
-            min_len, max_len = expected_range[chunk.heading_level]
-            if min_len <= len(chunk.content) <= max_len:
-                metrics['structural_consistency'] = 1.0
-            else:
-                metrics['structural_consistency'] = 0.5
-        else:
-            metrics['structural_consistency'] = 0.7
-    
-    return metrics
-
-# Example usage
-if __name__ == "__main__":
-    # Test code chunk
-    code_chunk = SemanticCodeChunk(
-        id="function_example",
-        file_path="example.py",
-        content="def process_data(data):\n    return [x * 2 for x in data]",
-        start_line=1,
-        end_line=2,
-        chunk_type=ChunkType.FUNCTION,
-        language="python"
-    )
-    
-    code_chunk.add_semantic_tag("data_processing", confidence=0.9, source="pattern")
-    code_chunk.function_calls = ["list_comprehension"]
-    code_chunk.variables_used = ["data", "x"]
-    
-    print(f"Code chunk: {code_chunk.id}")
-    print(f"Content type: {code_chunk.content_type.value}")
-    print(f"Tags: {code_chunk.tag_names}")
-    print(f"Quality metrics: {calculate_code_quality_metrics(code_chunk)}")
-    
-    # Test document chunk
-    doc_chunk = SemanticDocumentChunk(
-        id="heading_example",
-        file_path="README.md",
-        content="# Data Processing\n\nThis module handles data processing operations.",
-        start_line=1,
-        end_line=3,
-        content_type=ContentType.MARKDOWN,
-        section_type="heading",
-        heading_level=1
-    )
-    
-    doc_chunk.add_semantic_tag("documentation", confidence=1.0, source="structure")
-    doc_chunk.topics = ["data_processing", "module_overview"]
-    
-    print(f"\nDocument chunk: {doc_chunk.id}")
-    print(f"Content type: {doc_chunk.content_type.value}")
-    print(f"Section type: {doc_chunk.section_type}")
-    print(f"Is heading: {doc_chunk.is_heading}")
-    print(f"Topics: {doc_chunk.topics}")
-    print(f"Quality metrics: {calculate_document_quality_metrics(doc_chunk)}")

@@ -1,4 +1,4 @@
-# chuk_code_raptor/chunking/config.py
+# src/chuk_code_raptor/chunking/config.py
 """
 Chunking Configuration
 ======================
