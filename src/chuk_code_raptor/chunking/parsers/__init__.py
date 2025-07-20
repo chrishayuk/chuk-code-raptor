@@ -21,10 +21,10 @@ AVAILABLE_PARSERS = {
         'description': 'Python parser using tree-sitter AST analysis'
     },
     'markdown': {
-        'module': 'chuk_code_raptor.chunking.parsers.markdown', 
+        'module': 'chuk_code_raptor.chunking.parsers.markdown',
         'class': 'MarkdownParser',
-        'type': 'tree_sitter',
-        'description': 'Markdown parser using tree-sitter with semantic analysis'
+        'type': 'enhanced_tree_sitter',
+        'description': 'Enhanced Markdown parser with tree-sitter and manual semantic fallback'
     },
     'javascript': {
         'module': 'chuk_code_raptor.chunking.parsers.javascript',
@@ -32,12 +32,6 @@ AVAILABLE_PARSERS = {
         'type': 'tree_sitter',
         'description': 'JavaScript/TypeScript parser using tree-sitter'
     },
-    # 'rust': {
-    #     'module': 'chuk_code_raptor.chunking.parsers.rust',
-    #     'class': 'RustParser',
-    #     'type': 'tree_sitter', 
-    #     'description': 'Rust parser using tree-sitter AST analysis'
-    # },
     'json': {
         'module': 'chuk_code_raptor.chunking.parsers.json',
         'class': 'JSONParser',
@@ -47,8 +41,14 @@ AVAILABLE_PARSERS = {
     'html': {
         'module': 'chuk_code_raptor.chunking.parsers.html',
         'class': 'HTMLParser', 
+        'type': 'enhanced_tree_sitter',
+        'description': 'Enhanced HTML parser with tree-sitter and semantic element extraction'
+    },
+    'css': {
+        'module': 'chuk_code_raptor.chunking.parsers.css',
+        'class': 'CSSParser',
         'type': 'tree_sitter',
-        'description': 'HTML parser using tree-sitter'
+        'description': 'CSS parser using tree-sitter'
     },
 }
 
@@ -138,7 +138,12 @@ def _log_parser_status():
     if available:
         logger.info(f"Parsers package initialized with {len(available)} available parsers")
         for language, info in available.items():
-            logger.debug(f"  {language}: {info['type']} parser ({info.get('parser_name', 'unknown')})")
+            parser_type = info.get('type', 'unknown')
+            logger.debug(f"  {language}: {parser_type} parser ({info.get('parser_name', 'unknown')})")
+            
+            # Log enhanced parsers specially
+            if parser_type == 'enhanced_tree_sitter':
+                logger.info(f"  Enhanced parser available for {language} with semantic fallback")
     else:
         logger.warning("No parsers available - check tree-sitter dependencies")
 
