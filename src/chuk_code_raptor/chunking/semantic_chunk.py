@@ -441,6 +441,203 @@ class SemanticChunk:
             'has_embedding': self.has_semantic_embedding,
             'version': self.version
         }
+    
+    def to_dict(self, include_embedding: bool = True) -> Dict[str, Any]:
+        """Convert SemanticChunk to dictionary for JSON serialization
+        
+        Args:
+            include_embedding: Whether to include the actual embedding data (default: True)
+                            Set to False to save space when embeddings are large
+        """
+        # Convert enums to their values
+        chunk_type_value = self.chunk_type.value if hasattr(self.chunk_type, 'value') else str(self.chunk_type)
+        content_type_value = self.content_type.value if hasattr(self.content_type, 'value') else str(self.content_type)
+        complexity_value = self.complexity_level.value if hasattr(self.complexity_level, 'value') else str(self.complexity_level)
+        
+        # Convert relationships to dicts
+        relationships_data = []
+        for rel in self.relationships:
+            relationships_data.append({
+                'source_chunk_id': rel.source_chunk_id,
+                'target_chunk_id': rel.target_chunk_id,
+                'relationship_type': rel.relationship_type,
+                'strength': rel.strength,
+                'context': rel.context,
+                'line_number': rel.line_number,
+                'metadata': rel.metadata
+            })
+        
+        # Convert semantic tags to dicts
+        tags_data = []
+        for tag in self.semantic_tags:
+            tags_data.append({
+                'name': tag.name,
+                'confidence': tag.confidence,
+                'source': tag.source,
+                'category': tag.category,
+                'metadata': tag.metadata
+            })
+        
+        # Convert detected patterns to dicts
+        patterns_data = []
+        for pattern in self.detected_patterns:
+            patterns_data.append({
+                'pattern_name': pattern.pattern_name,
+                'confidence': pattern.confidence,
+                'evidence': pattern.evidence,
+                'category': pattern.category
+            })
+        
+        return {
+            'id': self.id,
+            'file_path': self.file_path,
+            'content': self.content,
+            'start_line': self.start_line,
+            'end_line': self.end_line,
+            'content_type': content_type_value,
+            'language': self.language,
+            'chunk_type': chunk_type_value,
+            'complexity_level': complexity_value,
+            
+            # Content analysis
+            'content_hash': self.content_hash,
+            'character_count': self.character_count,
+            'word_count': self.word_count,
+            
+            # Dependencies and relationships
+            'dependencies': self.dependencies,
+            'dependents': self.dependents,
+            'references': self.references,
+            'relationships': relationships_data,
+            
+            # Semantic information
+            'semantic_tags': tags_data,
+            'detected_patterns': patterns_data,
+            'summary': self.summary,
+            'keywords': self.keywords,
+            
+            # Context
+            'context_chunks': self.context_chunks,
+            'parent_context': self.parent_context,
+            'scope_level': self.scope_level,
+            'namespace': self.namespace,
+            
+            # Quality metrics
+            'quality_scores': self.quality_scores,
+            'importance_score': self.importance_score,
+            
+            # Fingerprints
+            'content_fingerprint': self.content_fingerprint,
+            'dependency_fingerprint': self.dependency_fingerprint,
+            'combined_fingerprint': self.combined_fingerprint,
+            
+            # Change tracking
+            'version': self.version,
+            'last_modified': self.last_modified.isoformat() if self.last_modified else None,
+            
+            # Embedding - FIX: Include the actual embedding data
+            'semantic_embedding': self.semantic_embedding if include_embedding else None,
+            'has_semantic_embedding': self.has_semantic_embedding,
+            'embedding_model': self.embedding_model,
+            'embedding_version': self.embedding_version,
+            
+            # Graph integration
+            'graph_node_id': self.graph_node_id,
+            
+            # Metadata
+            'metadata': self.metadata,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'SemanticChunk':
+        """Create SemanticChunk from dictionary"""
+        from chuk_code_raptor.core.models import ChunkType
+        
+        # Convert string values back to enums
+        chunk_type = ChunkType(data['chunk_type']) if isinstance(data['chunk_type'], str) else data['chunk_type']
+        content_type = ContentType(data['content_type']) if isinstance(data['content_type'], str) else data['content_type']
+        complexity_level = ChunkComplexity(data['complexity_level']) if isinstance(data['complexity_level'], str) else data['complexity_level']
+        
+        # Convert datetime strings back to datetime objects
+        created_at = datetime.fromisoformat(data['created_at']) if data.get('created_at') else datetime.now()
+        updated_at = datetime.fromisoformat(data['updated_at']) if data.get('updated_at') else datetime.now()
+        last_modified = datetime.fromisoformat(data['last_modified']) if data.get('last_modified') else datetime.now()
+        
+        # Create the chunk
+        chunk = cls(
+            id=data['id'],
+            file_path=data['file_path'],
+            content=data['content'],
+            start_line=data['start_line'],
+            end_line=data['end_line'],
+            content_type=content_type,
+            language=data.get('language'),
+            chunk_type=chunk_type,
+            complexity_level=complexity_level,
+            dependencies=data.get('dependencies', []),
+            dependents=data.get('dependents', []),
+            references=data.get('references', []),
+            summary=data.get('summary'),
+            keywords=data.get('keywords', []),
+            context_chunks=data.get('context_chunks', []),
+            parent_context=data.get('parent_context'),
+            scope_level=data.get('scope_level', 0),
+            namespace=data.get('namespace'),
+            quality_scores=data.get('quality_scores', {}),
+            importance_score=data.get('importance_score', 0.5),
+            version=data.get('version', 1),
+            # FIX: Properly restore the embedding data
+            semantic_embedding=data.get('semantic_embedding'),
+            embedding_model=data.get('embedding_model'),
+            embedding_version=data.get('embedding_version', 1),
+            metadata=data.get('metadata', {}),
+            created_at=created_at,
+            updated_at=updated_at
+        )
+        
+        # Restore fingerprints
+        chunk.content_fingerprint = data.get('content_fingerprint')
+        chunk.dependency_fingerprint = data.get('dependency_fingerprint')
+        chunk.combined_fingerprint = data.get('combined_fingerprint')
+        chunk.last_modified = last_modified
+        
+        # Restore relationships
+        for rel_data in data.get('relationships', []):
+            relationship = ChunkRelationship(
+                source_chunk_id=rel_data['source_chunk_id'],
+                target_chunk_id=rel_data['target_chunk_id'],
+                relationship_type=rel_data['relationship_type'],
+                strength=rel_data['strength'],
+                context=rel_data['context'],
+                line_number=rel_data.get('line_number'),
+                metadata=rel_data.get('metadata', {})
+            )
+            chunk.relationships.append(relationship)
+        
+        # Restore semantic tags
+        for tag_data in data.get('semantic_tags', []):
+            tag = SemanticTag(
+                name=tag_data['name'],
+                confidence=tag_data['confidence'],
+                source=tag_data['source'],
+                category=tag_data['category'],
+                metadata=tag_data.get('metadata', {})
+            )
+            chunk.semantic_tags.append(tag)
+        
+        # Restore detected patterns
+        for pattern_data in data.get('detected_patterns', []):
+            pattern = CodePattern(
+                pattern_name=pattern_data['pattern_name'],
+                confidence=pattern_data['confidence'],
+                evidence=pattern_data['evidence'],
+                category=pattern_data['category']
+            )
+            chunk.detected_patterns.append(pattern)
+        
+        return chunk
 
 # Utility functions
 
