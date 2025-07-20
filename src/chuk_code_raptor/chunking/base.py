@@ -103,7 +103,7 @@ class BaseParser(ABC):
         elif language in {'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'cpp'}:
             return ContentType.CODE
         else:
-            return ContentType.TEXT
+            return ContentType.PLAINTEXT  # Changed from ContentType.TEXT
     
     def _create_chunk(self, content: str, start_line: int, end_line: int, 
                      chunk_type: ChunkType, language: str, file_path: str,

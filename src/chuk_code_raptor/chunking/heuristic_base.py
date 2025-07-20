@@ -10,6 +10,7 @@ Clean implementation extending BaseParser.
 from abc import abstractmethod
 from typing import List
 import logging
+import re
 
 from .base import BaseParser, ParseContext
 from .semantic_chunk import SemanticChunk, create_chunk_id
@@ -80,7 +81,11 @@ class HeuristicParser(BaseParser):
             ChunkType.TEXT_BLOCK: 0.5,
         }
         
-        base_score = type_scores.get(chunk_type, 0.5)
+        # Handle None or unknown chunk types
+        if chunk_type is None:
+            base_score = 0.5
+        else:
+            base_score = type_scores.get(chunk_type, 0.5)
         
         # Adjust based on content characteristics
         word_count = len(content.split())
@@ -108,7 +113,6 @@ class HeuristicParser(BaseParser):
     
     def _find_line_ranges(self, content: str, pattern: str) -> List[tuple]:
         """Find line ranges matching a pattern"""
-        import re
         lines = self._split_into_lines(content)
         ranges = []
         
@@ -121,20 +125,27 @@ class HeuristicParser(BaseParser):
     def _extract_sections_by_pattern(self, content: str, start_pattern: str, 
                                    end_pattern: str = None) -> List[tuple]:
         """Extract sections between start and end patterns"""
-        import re
         lines = self._split_into_lines(content)
         sections = []
-        current_start = None
         
-        for i, line in enumerate(lines):
-            if re.search(start_pattern, line) and current_start is None:
-                current_start = i + 1  # 1-based line number
-            elif end_pattern and re.search(end_pattern, line) and current_start is not None:
-                sections.append((current_start, i + 1))
-                current_start = None
-        
-        # Handle unclosed sections
-        if current_start is not None:
-            sections.append((current_start, len(lines)))
+        if end_pattern is None:
+            # If no end pattern, each start creates a section to the end
+            for i, line in enumerate(lines):
+                if re.search(start_pattern, line):
+                    sections.append((i + 1, len(lines)))  # 1-based line numbers
+        else:
+            # Look for start-end pairs
+            current_start = None
+            
+            for i, line in enumerate(lines):
+                if re.search(start_pattern, line) and current_start is None:
+                    current_start = i + 1  # 1-based line number
+                elif end_pattern and re.search(end_pattern, line) and current_start is not None:
+                    sections.append((current_start, i + 1))
+                    current_start = None
+            
+            # Handle unclosed sections
+            if current_start is not None:
+                sections.append((current_start, len(lines)))
         
         return sections
