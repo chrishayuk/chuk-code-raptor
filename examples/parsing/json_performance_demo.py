@@ -64,10 +64,15 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
             round(random.uniform(0, 1000), 2)
         ])
     
+    # Safety limit for generation loops
+    MAX_ITERATIONS = 1000
+    
     if structure_type == "simple_objects":
         # Generate array of simple objects
         objects = []
-        while len(json.dumps(objects, indent=2)) < target_size:
+        iterations = 0
+        while len(json.dumps(objects, indent=2)) < target_size and iterations < MAX_ITERATIONS:
+            iterations += 1
             obj = {
                 "id": f"obj_{len(objects)}",
                 "name": random_string(15),
@@ -98,7 +103,9 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
         
         # Create multiple nested objects until we reach target size
         objects = []
-        while len(json.dumps(objects, indent=2)) < target_size:
+        iterations = 0
+        while len(json.dumps(objects, indent=2)) < target_size and iterations < MAX_ITERATIONS:
+            iterations += 1
             objects.append(create_nested_object(4))
         
         return json.dumps(objects, indent=2)
@@ -113,7 +120,9 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
             return obj
         
         objects = []
-        while len(json.dumps(objects, indent=2)) < target_size:
+        iterations = 0
+        while len(json.dumps(objects, indent=2)) < target_size and iterations < MAX_ITERATIONS:
+            iterations += 1
             objects.append(create_wide_object())
         
         return json.dumps(objects, indent=2)
@@ -138,7 +147,9 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
             return array
         
         data = {"mixed_arrays": []}
-        while len(json.dumps(data, indent=2)) < target_size:
+        iterations = 0
+        while len(json.dumps(data, indent=2)) < target_size and iterations < MAX_ITERATIONS:
+            iterations += 1
             data["mixed_arrays"].append(create_mixed_array())
         
         return json.dumps(data, indent=2)
@@ -201,14 +212,34 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
                 "config": {f"option_{j}": random_value() for j in range(3)}
             })
         
+        # Check initial size and expand if needed
         result = json.dumps(config, indent=2)
         
-        # If too small, duplicate and modify
-        while len(result) < target_size:
-            new_config = json.loads(result)
-            suffix = len(new_config.get("applications", {}))
-            new_config[f"application_instance_{suffix}"] = config["application"]
-            result = json.dumps(new_config, indent=2)
+        # If too small, add more services/features linearly (not exponentially)
+        expansion_count = 0
+        while len(result) < target_size and expansion_count < 50:  # Safety limit
+            expansion_count += 1
+            
+            # Add more services
+            for i in range(5):
+                service_name = f"service_{len(config['services'])}_{expansion_count}"
+                config["services"][service_name] = {
+                    "enabled": random.choice([True, False]),
+                    "endpoint": f"https://service{len(config['services'])}.example.com",
+                    "timeout": random.randint(30, 300),
+                    "retries": random.randint(1, 5),
+                    "config": {f"setting_{j}": random_value() for j in range(8)}
+                }
+            
+            # Add more features
+            for i in range(3):
+                feature_name = f"feature_{len(config['application']['features'])}_{expansion_count}"
+                config["application"]["features"][feature_name] = {
+                    "enabled": random.choice([True, False]),
+                    "config": {f"param_{j}": random_value() for j in range(5)}
+                }
+            
+            result = json.dumps(config, indent=2)
         
         return result
     
@@ -259,7 +290,9 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
             }
         
         responses = []
-        while len(json.dumps(responses, indent=2)) < target_size:
+        iterations = 0
+        while len(json.dumps(responses, indent=2)) < target_size and iterations < MAX_ITERATIONS:
+            iterations += 1
             responses.append(create_api_response())
         
         return json.dumps(responses, indent=2)
@@ -268,7 +301,7 @@ def generate_test_json(structure_type: str, target_size: int) -> str:
         return json.dumps({"message": "Simple JSON", "size": target_size}, indent=2)
 
 def run_parsing_benchmark(content: str, iterations: int = 5) -> Dict[str, Any]:
-    """Run parsing benchmark with multiple iterations"""
+    """Run parsing benchmark with multiple iterations and timeout protection"""
     from chuk_code_raptor.chunking.engine import ChunkingEngine
     from chuk_code_raptor.chunking.config import ChunkingConfig
     
@@ -287,9 +320,57 @@ def run_parsing_benchmark(content: str, iterations: int = 5) -> Dict[str, Any]:
     
     for i in range(iterations):
         profiler.start()
-        chunks = engine.chunk_content(content, 'json', f'test_file_{i}.json')
-        metrics = profiler.stop()
         
+        try:
+            # Add timeout protection
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Parsing took too long")
+            
+            # Set 30-second timeout
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(30)
+            
+            chunks = engine.chunk_content(content, 'json', f'test_file_{i}.json')
+            
+            # Cancel timeout
+            signal.alarm(0)
+            
+        except TimeoutError:
+            print(f"   ⚠️  Parsing timed out after 30 seconds")
+            signal.alarm(0)
+            return {
+                'iterations': i,
+                'avg_duration_ms': 30000,  # 30 seconds
+                'min_duration_ms': 30000,
+                'max_duration_ms': 30000,
+                'std_duration_ms': 0,
+                'avg_memory_delta_mb': 0,
+                'avg_chunks_created': 0,
+                'chunks_per_second': 0,
+                'chars_per_second': 0,
+                'all_results': [],
+                'timeout': True
+            }
+        except Exception as e:
+            print(f"   ❌ Parsing error: {e}")
+            signal.alarm(0)
+            return {
+                'iterations': i,
+                'avg_duration_ms': 0,
+                'min_duration_ms': 0,
+                'max_duration_ms': 0,
+                'std_duration_ms': 0,
+                'avg_memory_delta_mb': 0,
+                'avg_chunks_created': 0,
+                'chunks_per_second': 0,
+                'chars_per_second': 0,
+                'all_results': [],
+                'error': str(e)
+            }
+        
+        metrics = profiler.stop()
         results.append(metrics)
         chunks_counts.append(len(chunks))
         
@@ -346,7 +427,11 @@ def run_scalability_test() -> List[Dict[str, Any]]:
         print(f"🧪 Testing {scenario['label']} (~{scenario['size']} chars, {scenario['structure']})...")
         
         # Generate test content
-        content = generate_test_json(scenario['structure'], scenario['size'])
+        try:
+            content = generate_test_json(scenario['structure'], scenario['size'])
+        except Exception as e:
+            print(f"   ❌ Failed to generate JSON: {e}")
+            continue
         
         # Validate JSON
         try:
@@ -355,8 +440,21 @@ def run_scalability_test() -> List[Dict[str, Any]]:
             print(f"   ❌ Generated invalid JSON: {e}")
             continue
         
+        # Skip if content is too large (> 200KB to prevent hanging)
+        if len(content) > 200000:
+            print(f"   ⚠️  Skipping - content too large ({len(content):,} chars)")
+            continue
+        
         # Run benchmark
         benchmark_result = run_parsing_benchmark(content, iterations=3)
+        
+        # Check for errors or timeouts
+        if 'error' in benchmark_result:
+            print(f"   ❌ Parsing error: {benchmark_result['error']}")
+            continue
+        elif 'timeout' in benchmark_result:
+            print(f"   ⚠️  Parsing timed out")
+            continue
         
         # Analyze JSON structure
         json_data = json.loads(content)
