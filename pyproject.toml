@@ -37,7 +37,7 @@ dependencies = [
     "rich>=14.0.0",
     "scipy>=1.16.0",
     "tqdm>=4.67.1",
-    "tree-sitter>=0.24.0",
+    "tree-sitter>=0.24.8",
     "watchdog>=6.0.0",
 ]
 
@@ -54,9 +54,10 @@ c = ["tree-sitter-c>=0.23.0"]
 
 # Content parsers
 markdown = ["tree-sitter-markdown>=0.2.3"]
-html = ["tree-sitter-html>=0.23.0"]
+html = ["tree-sitter-html>=0.23.2"]
 json = ["tree-sitter-json>=0.24.8"]
 xml = ["tree-sitter-xml>=0.7.0"]
+css = ["tree-sitter-css>=0.23.2"]
 
 # Development and testing
 dev = [
@@ -99,6 +100,7 @@ all = [
     "tree-sitter-html>=0.23.0",
     "tree-sitter-json>=0.23.0",
     "tree-sitter-xml>=0.7.0",
+    "tree-sitter-css>=0.23.2"
 ]
 
 [project.urls]

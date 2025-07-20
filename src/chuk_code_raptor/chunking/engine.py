@@ -56,6 +56,7 @@ class ChunkingEngine:
             ('javascript', 'chuk_code_raptor.chunking.parsers.javascript', 'JavaScriptParser'),
             ('json', 'chuk_code_raptor.chunking.parsers.json', 'JSONParser'),
             ('html', 'chuk_code_raptor.chunking.parsers.html', 'HTMLParser'),
+            ('css', 'chuk_code_raptor.chunking.parsers.css', 'CSSParser'),
             # Skip rust for now due to tree-sitter version issues
             # ('rust', 'chuk_code_raptor.chunking.parsers.rust', 'RustParser'),
         ]
@@ -200,6 +201,10 @@ class ChunkingEngine:
             '.htm': 'html',
             '.yaml': 'yaml',
             '.yml': 'yaml',
+            '.css': 'css',
+            '.scss': 'css', 
+            '.sass': 'css',
+            '.less': 'css',
         }
         
         detected = extension_map.get(extension, 'text')
@@ -220,6 +225,8 @@ class ChunkingEngine:
             return ContentType.YAML
         elif language in {'python', 'javascript', 'typescript', 'rust'}:
             return ContentType.CODE
+        elif extension in {'.css', '.scss', '.sass', '.less'}:
+            return ContentType.CSS
         else:
             return ContentType.PLAINTEXT
     

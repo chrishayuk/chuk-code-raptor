@@ -75,6 +75,7 @@ class ContentType(Enum):
     DOCUMENTATION = "documentation"
     MARKDOWN = "markdown"
     HTML = "html"
+    CSS = "css"
     PLAINTEXT = "text"
     JSON = "json"
     YAML = "yaml"

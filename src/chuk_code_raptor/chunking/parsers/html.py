@@ -4,7 +4,7 @@ HTML Parser
 ===========
 
 HTML parser using tree-sitter-html for AST-based chunking.
-Follows the common TreeSitterParser architecture.
+Follows the common TreeSitterParser architecture with enhanced semantic element processing.
 """
 
 import logging
@@ -17,12 +17,15 @@ from chuk_code_raptor.core.models import ChunkType
 logger = logging.getLogger(__name__)
 
 class HTMLParser(TreeSitterParser):
-    """HTML parser using tree-sitter-html"""
+    """HTML parser using tree-sitter-html with enhanced semantic chunking"""
     
     def __init__(self, config):
+        # Call parent first
+        super().__init__(config)
+        
+        # Then set our specific supported languages and extensions
         self.supported_languages = {'html'}
         self.supported_extensions = {'.html', '.htm', '.xhtml'}
-        super().__init__(config)
         
         # Semantic HTML elements we want to chunk
         self.semantic_elements = {
@@ -31,7 +34,7 @@ class HTMLParser(TreeSitterParser):
             'p', 'pre', 'code', 'blockquote', 'ul', 'ol', 'li', 
             'table', 'thead', 'tbody', 'tr', 'form', 'figure'
         }
-    
+        
     def can_parse(self, language: str, file_extension: str) -> bool:
         return (language in self.supported_languages or 
                 file_extension in self.supported_extensions)
@@ -46,10 +49,68 @@ class HTMLParser(TreeSitterParser):
             raise ImportError("tree-sitter-html not installed. Install with: pip install tree-sitter-html") from e
     
     def _get_chunk_node_types(self) -> Dict[str, ChunkType]:
-        """HTML AST node types to chunk types mapping"""
+        """HTML AST node types to chunk types mapping - more inclusive"""
         return {
             'element': ChunkType.TEXT_BLOCK,
+            'text': ChunkType.TEXT_BLOCK,  # Also include text nodes
         }
+    
+    def parse(self, content: str, context) -> List[SemanticChunk]:
+        """Override parse method to use semantic element extraction"""
+        
+        # First try semantic element extraction
+        semantic_chunks = self._process_semantic_elements(content, context)
+        
+        # If we got good semantic chunks, use them
+        if len(semantic_chunks) > 1:  # More than just the root element
+            return self._post_process(semantic_chunks)
+        
+        # Otherwise fall back to default tree-sitter parsing
+        return super().parse(content, context)
+    
+    def _process_semantic_elements(self, content: str, context) -> List[SemanticChunk]:
+        """Process HTML content to extract semantic elements as separate chunks"""
+        try:
+            import tree_sitter
+            import tree_sitter_html
+            
+            language = tree_sitter.Language(tree_sitter_html.language())
+            parser = tree_sitter.Parser(language)
+            tree = parser.parse(bytes(content, 'utf8'))
+            
+            chunks = []
+            
+            def extract_semantic_chunks(node, depth=0):
+                """Extract chunks from semantic HTML elements"""
+                if node.type == 'element':
+                    # Get tag name
+                    tag_name = self._extract_tag_name(node, content)
+                    
+                    # If this is a semantic element, create a chunk
+                    if tag_name and tag_name in self.semantic_elements:
+                        chunk_content = content[node.start_byte:node.end_byte]
+                        
+                        # Only create chunk if it meets size criteria
+                        if len(chunk_content) >= self.config.min_chunk_size:
+                            chunk = self._create_chunk_from_node(node, content, context, ChunkType.TEXT_BLOCK)
+                            if chunk and self._should_include_chunk(chunk):
+                                chunks.append(chunk)
+                    
+                    # Always process children to find nested semantic elements
+                    for child in node.children:
+                        extract_semantic_chunks(child, depth + 1)
+                else:
+                    # Process children of non-element nodes
+                    for child in node.children:
+                        extract_semantic_chunks(child, depth + 1)
+            
+            extract_semantic_chunks(tree.root_node)
+            return chunks
+            
+        except Exception as e:
+            logger.warning(f"Error in semantic element extraction: {e}")
+            # Fall back to default parsing if there's an error
+            return super().parse(content, context)
     
     def _extract_identifier(self, node, content: str) -> Optional[str]:
         """Extract identifier from HTML AST node"""
@@ -209,12 +270,17 @@ class HTMLParser(TreeSitterParser):
             chunk.metadata['referenced_sources'] = sources
     
     def _should_include_chunk(self, chunk: SemanticChunk) -> bool:
-        """Override to be more selective with HTML chunks"""
-        tag_name = chunk.metadata.get('tag_name')
+        """Override to be more inclusive with HTML semantic elements"""
         
-        # Always include semantic elements
-        if tag_name in self.semantic_elements:
+        # Always include if it's a semantic HTML element
+        tag_name = chunk.metadata.get('tag_name')
+        if tag_name and tag_name in self.semantic_elements:
             return True
+        
+        # For non-semantic elements, use stricter criteria
+        if tag_name in ['html', 'body', 'head']:
+            # Only include if it's reasonably sized and not the whole document
+            return len(chunk.content) < self.config.target_chunk_size * 3
         
         # Use parent logic for other chunks
         return super()._should_include_chunk(chunk)
