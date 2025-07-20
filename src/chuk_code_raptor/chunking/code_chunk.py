@@ -1,7 +1,7 @@
-# src/chuk_code_raptor/chunking/code_chunk.py
+# src/chuk_code_raptor/chunking/code_chunk.py - Fixed Version
 """
-Code-Specific Chunk Model
-=========================
+Code-Specific Chunk Model - Fixed Version
+==========================================
 
 Specialized semantic chunk for code content. Language-agnostic design
 that relies on tree-sitter AST analysis rather than regex patterns.
@@ -63,9 +63,14 @@ class SemanticCodeChunk(SemanticChunk):
     
     def __post_init__(self):
         """Initialize code chunk"""
-        super().__post_init__()
-        if not self.content_type:
+        # Set default content type for code if not specified
+        if not hasattr(self, '_content_type_explicitly_set'):
             self.content_type = ContentType.CODE
+        
+        super().__post_init__()
+        
+        # Calculate initial quality metrics
+        self._calculate_quality_metrics()
     
     def set_code_quality_indicators(self, 
                                    has_docstring: bool = False,
@@ -76,11 +81,13 @@ class SemanticCodeChunk(SemanticChunk):
                                    cyclomatic_complexity: int = 0):
         """Set code quality indicators (called by language-specific parsers)"""
         self.has_docstring = has_docstring
-        self.docstring_quality = docstring_quality
+        # Clamp docstring_quality to valid range
+        self.docstring_quality = max(0.0, min(1.0, docstring_quality))
         self.has_type_hints = has_type_hints
-        self.type_coverage = type_coverage
+        # Clamp type_coverage to valid range
+        self.type_coverage = max(0.0, min(1.0, type_coverage))
         self.has_error_handling = has_error_handling
-        self.cyclomatic_complexity = cyclomatic_complexity
+        self.cyclomatic_complexity = max(0, cyclomatic_complexity)
         
         # Recalculate derived metrics
         self._calculate_quality_metrics()
@@ -220,10 +227,10 @@ def calculate_code_quality_metrics(chunk: SemanticCodeChunk) -> Dict[str, float]
     metrics['maintainability'] = chunk.maintainability_index
     metrics['test_coverage_indicator'] = chunk.test_coverage_indicator
     
-    # Documentation quality
+    # Documentation quality (already clamped)
     metrics['documentation_quality'] = chunk.docstring_quality
     
-    # Type safety
+    # Type safety (already clamped)
     metrics['type_safety'] = chunk.type_coverage
     
     # Complexity (inverted - lower complexity is better)
@@ -243,4 +250,5 @@ def calculate_code_quality_metrics(chunk: SemanticCodeChunk) -> Dict[str, float]
 
 def create_code_chunk_for_content_type(content_type: ContentType, **kwargs) -> SemanticCodeChunk:
     """Factory function to create code chunk"""
-    return SemanticCodeChunk(content_type=content_type, **kwargs)
+    kwargs['content_type'] = content_type
+    return SemanticCodeChunk(**kwargs)
