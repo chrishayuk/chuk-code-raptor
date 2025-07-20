@@ -10,400 +10,254 @@ Shows hierarchical abstractions, intelligent query routing, and scalable search.
 """
 
 import json
+from pathlib import Path
 from typing import List
 
 # Import RAPTOR modules
-from chuk_code_raptor.raptor.builder import RaptorBuilder, build_raptor_from_chunks, hybrid_search
+from chuk_code_raptor.raptor.builder import RaptorBuilder
 from chuk_code_raptor.raptor.models import HierarchyLevel, classify_query_type
 
 # Import existing infrastructure
 from chuk_code_raptor.graph.builder import CPGBuilder
 from chuk_code_raptor.chunking.semantic_chunk import (
-    SemanticChunk, create_chunk_id, QualityMetric, ContentType, CodePattern
+    SemanticChunk, create_chunk_id, QualityMetric, ContentType
 )
 from chuk_code_raptor.core.models import ChunkType
 
-def create_large_codebase_simulation() -> List[SemanticChunk]:
-    """Create a larger, more realistic codebase for RAPTOR demo"""
+def create_chunks_from_sample_file() -> List[SemanticChunk]:
+    """Create SemanticChunks from the external sample Python file"""
     chunks = []
     
-    # === Authentication Module ===
-    auth_models = SemanticChunk(
-        id=create_chunk_id("src/auth/models.py", 1, ChunkType.CLASS, "UserModel"),
-        file_path="src/auth/models.py",
-        content="""class UserModel:
-    def __init__(self, user_id, email, hashed_password):
-        self.user_id = user_id
-        self.email = email
-        self.hashed_password = hashed_password
-        self.created_at = datetime.now()
-        self.last_login = None
-        self.is_active = True
-        self.roles = []
+    sample_file = Path("examples/samples/sample.py")
     
-    def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.hashed_password)
+    if not sample_file.exists():
+        print(f"Warning: Sample file not found at {sample_file}")
+        print("Creating a minimal sample for demo purposes...")
+        return create_minimal_sample()
     
-    def add_role(self, role):
-        if role not in self.roles:
-            self.roles.append(role)
-    
-    def has_permission(self, permission):
-        return any(role.has_permission(permission) for role in self.roles)""",
-        start_line=1, end_line=18,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    auth_service = SemanticChunk(
-        id=create_chunk_id("src/auth/service.py", 1, ChunkType.CLASS, "AuthenticationService"),
-        file_path="src/auth/service.py",
-        content="""class AuthenticationService:
-    def __init__(self, user_repository, token_service, password_policy):
-        self.user_repo = user_repository
-        self.token_service = token_service
-        self.password_policy = password_policy
-        self.failed_attempts = {}
-        self.lockout_duration = timedelta(minutes=15)
-    
-    def authenticate(self, email, password):
-        if self._is_locked_out(email):
-            raise AccountLockedException(f"Account locked until {self._get_lockout_expiry(email)}")
-        
-        user = self.user_repo.find_by_email(email)
-        if not user or not user.check_password(password):
-            self._record_failed_attempt(email)
-            raise InvalidCredentialsException("Invalid email or password")
-        
-        self._clear_failed_attempts(email)
-        user.last_login = datetime.now()
-        self.user_repo.save(user)
-        
-        return self.token_service.generate_access_token(user)
-    
-    def register_user(self, email, password, profile_data):
-        if not self.password_policy.validate(password):
-            raise WeakPasswordException("Password does not meet security requirements")
-        
-        if self.user_repo.email_exists(email):
-            raise EmailAlreadyExistsException("Email address already registered")
-        
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user = UserModel(None, email, hashed_password)
-        
-        return self.user_repo.create(user)""",
-        start_line=1, end_line=32,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    # === Payment Module ===
-    payment_processor = SemanticChunk(
-        id=create_chunk_id("src/payment/processor.py", 1, ChunkType.CLASS, "PaymentProcessor"),
-        file_path="src/payment/processor.py",
-        content="""class PaymentProcessor:
-    def __init__(self, stripe_client, fraud_detector, audit_logger):
-        self.stripe = stripe_client
-        self.fraud_detector = fraud_detector
-        self.audit_logger = audit_logger
-        self.retry_policy = ExponentialBackoffRetry(max_attempts=3)
-    
-    def process_payment(self, payment_request):
-        # Fraud detection
-        fraud_score = self.fraud_detector.assess(payment_request)
-        if fraud_score > 0.8:
-            self.audit_logger.log_suspicious_activity(payment_request)
-            raise FraudDetectedException(f"High fraud risk: {fraud_score}")
-        
-        # Payment processing with retry
-        return self.retry_policy.execute(
-            lambda: self._charge_customer(payment_request)
-        )
-    
-    def _charge_customer(self, payment_request):
-        stripe_response = self.stripe.charges.create(
-            amount=payment_request.amount_cents,
-            currency=payment_request.currency,
-            source=payment_request.payment_method_token,
-            description=payment_request.description,
-            metadata=payment_request.metadata
-        )
-        
-        self.audit_logger.log_payment_processed(payment_request, stripe_response)
-        return PaymentResult.from_stripe_response(stripe_response)""",
-        start_line=1, end_line=27,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    # === API Gateway Module ===
-    api_gateway = SemanticChunk(
-        id=create_chunk_id("src/gateway/middleware.py", 1, ChunkType.CLASS, "AuthenticationMiddleware"),
-        file_path="src/gateway/middleware.py",
-        content="""class AuthenticationMiddleware:
-    def __init__(self, auth_service, rate_limiter, cors_policy):
-        self.auth_service = auth_service
-        self.rate_limiter = rate_limiter
-        self.cors_policy = cors_policy
-        self.exempt_paths = ['/health', '/metrics', '/auth/login']
-    
-    def process_request(self, request):
-        # CORS handling
-        if request.method == 'OPTIONS':
-            return self.cors_policy.create_preflight_response()
-        
-        # Rate limiting
-        if not self.rate_limiter.allow_request(request.remote_addr):
-            raise RateLimitExceededException("Too many requests")
-        
-        # Authentication bypass for exempt paths
-        if request.path in self.exempt_paths:
-            return None
-        
-        # Extract and validate token
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            raise UnauthorizedException("Missing or invalid authorization header")
-        
-        token = auth_header[7:]  # Remove 'Bearer ' prefix
-        try:
-            user_id = self.auth_service.validate_token(token)
-            request.current_user_id = user_id
-            return None
-        except InvalidTokenException:
-            raise UnauthorizedException("Invalid or expired token")""",
-        start_line=1, end_line=29,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    # === Data Access Layer ===
-    user_repository = SemanticChunk(
-        id=create_chunk_id("src/data/repositories/user_repository.py", 1, ChunkType.CLASS, "UserRepository"),
-        file_path="src/data/repositories/user_repository.py",
-        content="""class UserRepository:
-    def __init__(self, database_connection, cache_manager):
-        self.db = database_connection
-        self.cache = cache_manager
-        self.table_name = 'users'
-    
-    def find_by_email(self, email):
-        cache_key = f"user:email:{email}"
-        cached_user = self.cache.get(cache_key)
-        if cached_user:
-            return UserModel.from_dict(cached_user)
-        
-        query = f"SELECT * FROM {self.table_name} WHERE email = ? AND is_active = TRUE"
-        row = self.db.fetch_one(query, [email])
-        
-        if row:
-            user = UserModel.from_row(row)
-            self.cache.set(cache_key, user.to_dict(), ttl=300)
-            return user
-        
-        return None
-    
-    def create(self, user):
-        query = f"""
-        INSERT INTO {self.table_name} 
-        (email, hashed_password, created_at, is_active) 
-        VALUES (?, ?, ?, ?)
-        """
-        
-        user_id = self.db.execute_returning_id(
-            query, 
-            [user.email, user.hashed_password, user.created_at, user.is_active]
-        )
-        
-        user.user_id = user_id
-        self._invalidate_cache(user.email)
-        return user""",
-        start_line=1, end_line=32,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    # === Business Logic - Order Processing ===
-    order_service = SemanticChunk(
-        id=create_chunk_id("src/business/order_service.py", 1, ChunkType.CLASS, "OrderService"),
-        file_path="src/business/order_service.py",
-        content="""class OrderService:
-    def __init__(self, inventory_service, payment_processor, notification_service):
-        self.inventory = inventory_service
-        self.payment = payment_processor
-        self.notifications = notification_service
-        self.order_repository = OrderRepository()
-    
-    def create_order(self, user_id, cart_items, shipping_address):
-        # Validate inventory availability
-        for item in cart_items:
-            if not self.inventory.is_available(item.product_id, item.quantity):
-                raise InsufficientInventoryException(f"Not enough {item.product_id} in stock")
-        
-        # Calculate total and create order
-        total_amount = sum(item.price * item.quantity for item in cart_items)
-        order = Order(
-            user_id=user_id,
-            items=cart_items,
-            total_amount=total_amount,
-            shipping_address=shipping_address,
-            status=OrderStatus.PENDING
-        )
-        
-        order = self.order_repository.save(order)
-        
-        # Reserve inventory
-        for item in cart_items:
-            self.inventory.reserve(item.product_id, item.quantity, order.order_id)
-        
-        # Process payment
-        try:
-            payment_result = self.payment.process_payment(
-                PaymentRequest.from_order(order)
-            )
-            order.payment_id = payment_result.payment_id
-            order.status = OrderStatus.PAID
-            
-        except PaymentFailedException as e:
-            # Release reserved inventory
-            self._release_inventory_reservation(order)
-            order.status = OrderStatus.PAYMENT_FAILED
-            raise OrderProcessingException(f"Payment failed: {e}")
-        
-        # Send confirmation
-        self.notifications.send_order_confirmation(order)
-        return self.order_repository.save(order)""",
-        start_line=1, end_line=40,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.CLASS
-    )
-    
-    # === API Endpoints ===
-    user_api = SemanticChunk(
-        id=create_chunk_id("src/api/user_controller.py", 1, ChunkType.FUNCTION, "create_user"),
-        file_path="src/api/user_controller.py",
-        content="""@router.post('/users')
-@rate_limit(requests_per_minute=5)
-def create_user(request: CreateUserRequest):
+    # Read the sample file
     try:
-        # Validate input
-        if not request.email or not request.password:
-            return error_response("Email and password are required", 400)
+        with open(sample_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except Exception as e:
+        print(f"Error reading sample file: {e}")
+        return create_minimal_sample()
+    
+    # Parse into semantic chunks (simplified - in reality use tree-sitter)
+    chunks_data = [
+        # Configuration classes
+        ("ProcessingConfig", "class", 100, 180, "Advanced configuration for data processing operations"),
+        ("ProcessingMetrics", "class", 185, 220, "Metrics tracking for processing operations"),
         
-        # Register user
-        auth_service = get_auth_service()
-        user = auth_service.register_user(
-            email=request.email,
-            password=request.password,
-            profile_data=request.profile
+        # Protocol definitions  
+        ("ProcessorProtocol", "class", 225, 240, "Protocol defining the interface for data processors"),
+        ("CacheProtocol", "class", 245, 260, "Protocol for caching implementations"),
+        
+        # Cache implementation
+        ("MemoryCache", "class", 265, 330, "Simple in-memory cache implementation with TTL"),
+        
+        # Base processor
+        ("BaseProcessor", "class", 335, 450, "Abstract base class for all data processors"),
+        
+        # Advanced async processor
+        ("AsyncDataProcessor", "class", 455, 650, "Advanced asynchronous data processor"),
+        
+        # File processor
+        ("FileProcessor", "class", 655, 750, "Specialized processor for file operations"),
+        
+        # Factory and utilities
+        ("ProcessorFactory", "class", 755, 790, "Factory for creating different types of processors"),
+        ("get_default_config", "function", 795, 810, "Get default configuration for processor type"),
+        ("comprehensive_demo", "function", 850, 950, "Main demonstration function")
+    ]
+    
+    for name, chunk_type, start_line, end_line, description in chunks_data:
+        # Extract content for this chunk
+        lines = content.split('\n')
+        if start_line <= len(lines):
+            chunk_content = '\n'.join(lines[max(0, start_line-1):min(len(lines), end_line)])
+        else:
+            # Fallback content if line numbers don't match
+            chunk_content = f"# {name}\n# {description}\nclass {name}:\n    pass"
+        
+        # Create chunk based on type
+        ct = ChunkType.CLASS if chunk_type == "class" else ChunkType.FUNCTION
+        
+        chunk = SemanticChunk(
+            id=create_chunk_id(str(sample_file), start_line, ct, name),
+            file_path=str(sample_file),
+            content=chunk_content,
+            start_line=start_line,
+            end_line=end_line,
+            content_type=ContentType.CODE,
+            language="python",
+            chunk_type=ct,
+            summary=description
         )
         
-        # Generate welcome token
-        welcome_token = auth_service.generate_welcome_token(user)
+        # Add semantic tags based on the chunk name and type
+        if "Config" in name:
+            chunk.add_semantic_tag("configuration", confidence=0.95, source="analysis")
+            chunk.add_semantic_tag("dataclass", confidence=0.9, source="ast")
+        elif "Protocol" in name:
+            chunk.add_semantic_tag("protocol", confidence=0.95, source="ast")
+            chunk.add_semantic_tag("interface", confidence=0.9, source="analysis")
+        elif "Cache" in name:
+            chunk.add_semantic_tag("caching", confidence=0.95, source="analysis")
+            chunk.add_semantic_tag("memory-management", confidence=0.8, source="analysis")
+        elif "Processor" in name:
+            chunk.add_semantic_tag("processing", confidence=0.95, source="analysis")
+            chunk.add_semantic_tag("async", confidence=0.9, source="ast")
+            chunk.add_semantic_tag("business-logic", confidence=0.85, source="analysis")
+        elif "Factory" in name:
+            chunk.add_semantic_tag("factory-pattern", confidence=0.9, source="pattern")
+            chunk.add_semantic_tag("creation", confidence=0.8, source="analysis")
         
-        # Send welcome email
-        notification_service = get_notification_service()
-        notification_service.send_welcome_email(user, welcome_token)
+        # Add common tags
+        chunk.add_semantic_tag("python", confidence=1.0, source="ast")
+        chunk.add_semantic_tag("async-programming", confidence=0.8, source="analysis")
+        chunk.add_semantic_tag("enterprise", confidence=0.7, source="analysis")
         
-        return success_response({
-            'user_id': user.user_id,
-            'email': user.email,
-            'message': 'User created successfully. Check email for verification.'
-        }, 201)
+        # Set quality scores based on chunk characteristics
+        if "demo" in name.lower() or "example" in name.lower():
+            # Demo code typically has lower production quality
+            chunk.set_quality_score(QualityMetric.MAINTAINABILITY, 0.75)
+            chunk.set_quality_score(QualityMetric.READABILITY, 0.85)
+            chunk.set_quality_score(QualityMetric.SEMANTIC_COHERENCE, 0.80)
+        elif "Protocol" in name or "ABC" in chunk_content:
+            # Interfaces/protocols typically high quality
+            chunk.set_quality_score(QualityMetric.MAINTAINABILITY, 0.95)
+            chunk.set_quality_score(QualityMetric.READABILITY, 0.90)
+            chunk.set_quality_score(QualityMetric.SEMANTIC_COHERENCE, 0.95)
+        else:
+            # Regular implementation code
+            chunk.set_quality_score(QualityMetric.MAINTAINABILITY, 0.85)
+            chunk.set_quality_score(QualityMetric.READABILITY, 0.80)
+            chunk.set_quality_score(QualityMetric.SEMANTIC_COHERENCE, 0.85)
         
-    except EmailAlreadyExistsException:
-        return error_response("Email address already registered", 409)
-    except WeakPasswordException as e:
-        return error_response(f"Password validation failed: {e}", 400)
-    except Exception as e:
-        logger.error(f"User creation failed: {e}", exc_info=True)
-        return error_response("Internal server error", 500)""",
-        start_line=1, end_line=31,
-        content_type=ContentType.CODE,
-        language="python",
-        chunk_type=ChunkType.FUNCTION
-    )
+        chunks.append(chunk)
     
-    chunks = [auth_models, auth_service, payment_processor, api_gateway, 
-              user_repository, order_service, user_api]
+    # Add relationships between chunks
+    if len(chunks) >= 6:  # Ensure we have enough chunks
+        # BaseProcessor is used by AsyncDataProcessor
+        chunks[5].add_relationship(chunks[4].id, "depends_on", strength=0.9, 
+                                  context="inherits from BaseProcessor")
+        
+        # AsyncDataProcessor uses MemoryCache
+        chunks[6].add_relationship(chunks[4].id, "uses", strength=0.7,
+                                  context="caching implementation")
+        
+        # ProcessorFactory creates processors
+        if len(chunks) >= 9:
+            chunks[8].add_relationship(chunks[5].id, "creates", strength=0.8,
+                                      context="factory pattern")
+            chunks[8].add_relationship(chunks[6].id, "creates", strength=0.8,
+                                      context="factory pattern")
     
-    # Add relationships
-    auth_service.add_relationship(
-        auth_models.id, "depends_on", strength=0.9,
-        context="user model operations", line_number=13
-    )
-    
-    order_service.add_relationship(
-        payment_processor.id, "depends_on", strength=0.85,
-        context="payment processing", line_number=24
-    )
-    
-    user_api.add_relationship(
-        auth_service.id, "calls", strength=0.9,
-        context="user registration", line_number=9
-    )
-    
-    api_gateway.add_relationship(
-        auth_service.id, "depends_on", strength=0.8,
-        context="token validation", line_number=26
-    )
-    
-    # Add comprehensive semantic tags
-    tag_mappings = [
-        (auth_models, ["authentication", "user-model", "security", "data-model"]),
-        (auth_service, ["authentication", "security", "business-logic", "service-layer"]),
-        (payment_processor, ["payment", "financial", "fraud-detection", "external-integration"]),
-        (api_gateway, ["middleware", "security", "rate-limiting", "cors"]),
-        (user_repository, ["data-access", "caching", "persistence", "repository-pattern"]),
-        (order_service, ["business-logic", "order-processing", "inventory", "workflow"]),
-        (user_api, ["rest-api", "endpoint", "user-management", "validation"])
-    ]
-    
-    for chunk, tags in tag_mappings:
-        for tag in tags:
-            chunk.add_semantic_tag(tag, confidence=0.9, source="analysis")
-    
-    # Add quality scores
-    quality_mappings = [
-        (auth_models, 0.85, 0.80, 0.88),
-        (auth_service, 0.82, 0.85, 0.90),
-        (payment_processor, 0.88, 0.82, 0.85),
-        (api_gateway, 0.80, 0.85, 0.82),
-        (user_repository, 0.90, 0.88, 0.92),
-        (order_service, 0.78, 0.80, 0.85),
-        (user_api, 0.75, 0.78, 0.80)
-    ]
-    
-    for chunk, maintainability, readability, coherence in quality_mappings:
-        chunk.set_quality_score(QualityMetric.MAINTAINABILITY, maintainability)
-        chunk.set_quality_score(QualityMetric.READABILITY, readability)
-        chunk.set_quality_score(QualityMetric.SEMANTIC_COHERENCE, coherence)
-    
-    # Add embeddings (mock)
+    # Add mock embeddings for semantic similarity
     base_embeddings = {
-        'auth': [0.2, 0.8, 0.3] * 100,
-        'payment': [0.7, 0.4, 0.6] * 100,
-        'api': [0.5, 0.6, 0.4] * 100,
-        'data': [0.3, 0.7, 0.5] * 100
+        'config': [0.2, 0.1, 0.8, 0.3] * 75,     # 300-dim
+        'protocol': [0.8, 0.2, 0.1, 0.4] * 75,
+        'cache': [0.3, 0.8, 0.2, 0.5] * 75,
+        'processor': [0.5, 0.3, 0.8, 0.2] * 75,
+        'factory': [0.7, 0.5, 0.3, 0.8] * 75,
+        'demo': [0.4, 0.6, 0.5, 0.7] * 75
     }
     
-    embedding_mappings = [
-        (auth_models, 'auth'), (auth_service, 'auth'),
-        (payment_processor, 'payment'), (order_service, 'payment'),
-        (api_gateway, 'api'), (user_api, 'api'),
-        (user_repository, 'data')
+    for chunk in chunks:
+        if "Config" in chunk.id or "Metrics" in chunk.id:
+            embedding_type = 'config'
+        elif "Protocol" in chunk.id:
+            embedding_type = 'protocol'
+        elif "Cache" in chunk.id:
+            embedding_type = 'cache'
+        elif "Processor" in chunk.id:
+            embedding_type = 'processor'
+        elif "Factory" in chunk.id:
+            embedding_type = 'factory'
+        else:
+            embedding_type = 'demo'
+        
+        base = base_embeddings[embedding_type]
+        # Add slight variations for uniqueness
+        embedding = [x + (hash(chunk.id) % 20 - 10) / 1000 for x in base]
+        chunk.set_embedding(embedding, "text-embedding-ada-002", 1)
+    
+    return chunks
+
+def create_minimal_sample() -> List[SemanticChunk]:
+    """Create a minimal sample when the external file is not available"""
+    chunks = []
+    
+    minimal_chunks_data = [
+        ("SimpleConfig", "class", "Configuration class for basic settings"),
+        ("DataProcessor", "class", "Main data processing class"),
+        ("FileHandler", "class", "File operations handler"),
+        ("CacheManager", "class", "Cache management functionality"),
+        ("ProcessorFactory", "class", "Factory for creating processors"),
+        ("process_data", "function", "Main processing function"),
+        ("validate_input", "function", "Input validation function"),
+        ("setup_logging", "function", "Logging configuration function")
     ]
     
-    for chunk, embedding_type in embedding_mappings:
-        base = base_embeddings[embedding_type]
-        embedding = [x + (hash(chunk.id) % 10) / 200 for x in base]
+    for i, (name, chunk_type, description) in enumerate(minimal_chunks_data):
+        ct = ChunkType.CLASS if chunk_type == "class" else ChunkType.FUNCTION
+        
+        # Create simple content based on type
+        if chunk_type == "class":
+            content = f"""class {name}:
+    \"\"\"
+    {description}
+    \"\"\"
+    def __init__(self):
+        self.initialized = True
+    
+    def process(self):
+        return "processed"
+"""
+        else:
+            content = f"""def {name}(data):
+    \"\"\"
+    {description}
+    \"\"\"
+    if not data:
+        return None
+    return data
+"""
+        
+        chunk = SemanticChunk(
+            id=create_chunk_id("examples/minimal.py", i*10 + 1, ct, name),
+            file_path="examples/minimal.py",
+            content=content,
+            start_line=i*10 + 1,
+            end_line=i*10 + 10,
+            content_type=ContentType.CODE,
+            language="python",
+            chunk_type=ct,
+            summary=description
+        )
+        
+        # Add basic tags and quality
+        chunk.add_semantic_tag("python", confidence=1.0, source="ast")
+        chunk.add_semantic_tag("minimal-example", confidence=0.9, source="manual")
+        
+        if "Config" in name:
+            chunk.add_semantic_tag("configuration", confidence=0.8, source="analysis")
+        elif "Cache" in name:
+            chunk.add_semantic_tag("caching", confidence=0.8, source="analysis")
+        elif "Factory" in name:
+            chunk.add_semantic_tag("factory-pattern", confidence=0.8, source="pattern")
+        elif "Processor" in name:
+            chunk.add_semantic_tag("processing", confidence=0.8, source="analysis")
+        
+        chunk.set_quality_score(QualityMetric.READABILITY, 0.85)
+        chunk.set_quality_score(QualityMetric.MAINTAINABILITY, 0.80)
+        
+        # Add basic embedding
+        embedding = [0.5 + (i * 0.1) % 1.0] * 300
         chunk.set_embedding(embedding, "text-embedding-ada-002", 1)
+        
+        chunks.append(chunk)
     
     return chunks
 
@@ -413,8 +267,8 @@ def demo_raptor_construction():
     print(" RAPTOR HIERARCHY CONSTRUCTION")
     print("="*70)
     
-    chunks = create_large_codebase_simulation()
-    print(f"Created codebase simulation with {len(chunks)} chunks")
+    chunks = create_chunks_from_sample_file()
+    print(f"Created codebase from sample file with {len(chunks)} chunks")
     
     # Build CPG first
     cpg_builder = CPGBuilder()
@@ -445,10 +299,10 @@ def demo_intelligent_query_routing(raptor_builder):
     print("="*70)
     
     queries = [
-        ("How does the authentication system work?", "architectural"),
-        ("Show me the payment processing implementation", "implementation"),
-        ("What calls the UserRepository?", "relationship"),
-        ("What's the API for user creation?", "api"),
+        ("How does the processing system work?", "architectural"),
+        ("Show me the cache implementation", "implementation"),
+        ("What calls the ProcessorFactory?", "relationship"),
+        ("What's the API for configuration?", "api"),
         ("Where are the quality issues?", "quality")
     ]
     
@@ -468,7 +322,8 @@ def demo_intelligent_query_routing(raptor_builder):
             level_name = HierarchyLevel(result['level']).name
             print(f"  {i+1}. [{level_name}] {result.get('file_path', 'N/A')}")
             print(f"     Score: {result['score']:.3f}")
-            print(f"     Summary: {result['summary'][:100]}...")
+            summary = result['summary'][:100] + "..." if len(result['summary']) > 100 else result['summary']
+            print(f"     Summary: {summary}")
 
 def demo_hierarchical_context(raptor_builder, chunks):
     """Demo hierarchical context retrieval"""
@@ -476,12 +331,23 @@ def demo_hierarchical_context(raptor_builder, chunks):
     print(" HIERARCHICAL CONTEXT RETRIEVAL")
     print("="*70)
     
-    # Get context for the AuthenticationService
-    auth_service_chunk = next(c for c in chunks if "AuthenticationService" in c.id)
+    # Get context for the first processor chunk
+    target_chunk = None
+    for chunk in chunks:
+        if "Processor" in chunk.id or "Config" in chunk.id:
+            target_chunk = chunk
+            break
     
-    print(f"Getting hierarchical context for: {auth_service_chunk.id}")
+    if not target_chunk:
+        target_chunk = chunks[0] if chunks else None
     
-    context = raptor_builder.get_hierarchical_context(auth_service_chunk.id)
+    if not target_chunk:
+        print("No chunks available for context demo")
+        return
+    
+    print(f"Getting hierarchical context for: {target_chunk.id}")
+    
+    context = raptor_builder.get_hierarchical_context(target_chunk.id)
     
     print("\n--- Hierarchy Path ---")
     for level_info in context['hierarchy_path']:
@@ -489,7 +355,8 @@ def demo_hierarchical_context(raptor_builder, chunks):
         print(f"  Level {level_info['level']} ({level_name}): {level_info['title']}")
         print(f"    Keywords: {', '.join(level_info['keywords'])}")
         if level_info['summary']:
-            print(f"    Summary: {level_info['summary'][:150]}...")
+            summary = level_info['summary'][:150] + "..." if len(level_info['summary']) > 150 else level_info['summary']
+            print(f"    Summary: {summary}")
     
     print(f"\n--- Related Components ---")
     print(f"Related chunks: {len(context['related_chunks'])}")
@@ -509,9 +376,9 @@ def demo_token_efficient_search(raptor_builder):
     print("="*70)
     
     queries_and_budgets = [
-        ("How does user registration work?", 2000),
-        ("Explain the payment processing architecture", 4000),
-        ("Show me all authentication-related code", 8000)
+        ("How does configuration work?", 2000),
+        ("Explain the processing architecture", 4000),
+        ("Show me all caching-related code", 8000)
     ]
     
     for query, token_budget in queries_and_budgets:
@@ -542,21 +409,29 @@ def demo_incremental_updates(raptor_builder, chunks):
     print(" INCREMENTAL RAPTOR UPDATES")
     print("="*70)
     
-    # Simulate changes to the PaymentProcessor
-    payment_chunk = next(c for c in chunks if "PaymentProcessor" in c.id)
+    # Find a processor chunk to modify
+    processor_chunk = None
+    for chunk in chunks:
+        if "Processor" in chunk.id:
+            processor_chunk = chunk
+            break
     
-    print(f"Original chunk version: {payment_chunk.version}")
-    print(f"Original fingerprint: {payment_chunk.combined_fingerprint[:16]}...")
+    if not processor_chunk:
+        print("No processor chunk found for update demo")
+        return
+    
+    print(f"Original chunk version: {processor_chunk.version}")
+    print(f"Original fingerprint: {processor_chunk.combined_fingerprint[:16]}...")
     
     # Modify the chunk
-    payment_chunk.content += "\n\n    def refund_payment(self, payment_id, amount):\n        return self.stripe.refunds.create(charge=payment_id, amount=amount)"
-    payment_chunk.update_fingerprints()
+    processor_chunk.content += "\n\n    def new_feature(self):\n        return 'enhanced functionality'"
+    processor_chunk.update_fingerprints()
     
-    print(f"Modified version: {payment_chunk.version}")
-    print(f"Modified fingerprint: {payment_chunk.combined_fingerprint[:16]}...")
+    print(f"Modified version: {processor_chunk.version}")
+    print(f"Modified fingerprint: {processor_chunk.combined_fingerprint[:16]}...")
     
     # Update RAPTOR
-    update_summary = raptor_builder.update_from_changes([payment_chunk])
+    update_summary = raptor_builder.update_from_changes([processor_chunk])
     
     print(f"\nUpdate Results:")
     print(f"  Affected RAPTOR nodes: {update_summary['affected_raptor_nodes']}")

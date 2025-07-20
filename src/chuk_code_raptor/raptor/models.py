@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # src/chuk_code_raptor/raptor/models.py
+#!/usr/bin/env python3
 """
 RAPTOR Models
 =============
@@ -108,9 +109,15 @@ class RaptorNode:
             ).hexdigest()
         
         # Combined hash for change detection
+        # Convert enum keys to strings for JSON serialization
+        summary_hashes_serializable = {
+            k.value if hasattr(k, 'value') else str(k): v 
+            for k, v in self.summary_hashes.items()
+        }
+        
         combined_content = json.dumps({
             'content': self.content_hash,
-            'summaries': self.summary_hashes,
+            'summaries': summary_hashes_serializable,
             'children': sorted(self.child_ids)
         }, sort_keys=True)
         self.combined_hash = hashlib.sha256(combined_content.encode('utf-8')).hexdigest()
