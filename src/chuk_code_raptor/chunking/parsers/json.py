@@ -20,9 +20,12 @@ class JSONParser(TreeSitterParser):
     """JSON parser using tree-sitter-json"""
     
     def __init__(self, config):
+        # Call parent first
+        super().__init__(config)
+        
+        # Then set our specific supported languages and extensions
         self.supported_languages = {'json'}
         self.supported_extensions = {'.json', '.jsonl', '.ndjson'}
-        super().__init__(config)
     
     def can_parse(self, language: str, file_extension: str) -> bool:
         return (language in self.supported_languages or 

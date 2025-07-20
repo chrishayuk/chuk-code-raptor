@@ -55,7 +55,7 @@ c = ["tree-sitter-c>=0.23.0"]
 # Content parsers
 markdown = ["tree-sitter-markdown>=0.2.3"]
 html = ["tree-sitter-html>=0.23.0"]
-json = ["tree-sitter-json>=0.23.0"]
+json = ["tree-sitter-json>=0.24.8"]
 xml = ["tree-sitter-xml>=0.7.0"]
 
 # Development and testing
@@ -200,4 +200,9 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
+]
+
+[dependency-groups]
+dev = [
+    "psutil>=7.0.0",
 ]

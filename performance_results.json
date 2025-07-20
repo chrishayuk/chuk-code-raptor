@@ -1,0 +1,474 @@
+{
+  "timestamp": 1753032586.23382,
+  "system_info": {
+    "python_version": "3.11.10 (main, Oct 16 2024, 08:56:36) [Clang 18.1.8 ]",
+    "platform": "darwin",
+    "cpu_count": 16,
+    "memory_total_gb": 128.0
+  },
+  "scalability_tests": [
+    {
+      "complexity": "simple",
+      "size": 1000,
+      "label": "Small Simple",
+      "actual_size": 1000,
+      "line_count": 47,
+      "iterations": 3,
+      "avg_duration_ms": 0.6046295166015625,
+      "min_duration_ms": 0.44608116149902344,
+      "max_duration_ms": 0.8068084716796875,
+      "std_duration_ms": 0.18427905474637224,
+      "avg_memory_delta_mb": 0.19791666666666666,
+      "avg_chunks_created": 4,
+      "chunks_per_second": 6615.621451104101,
+      "chars_per_second": 1653905.3627760252,
+      "all_results": [
+        {
+          "duration_ms": 0.8068084716796875,
+          "memory_start_mb": 28.34375,
+          "memory_end_mb": 28.90625,
+          "memory_delta_mb": 0.5625
+        },
+        {
+          "duration_ms": 0.5609989166259766,
+          "memory_start_mb": 28.90625,
+          "memory_end_mb": 28.9375,
+          "memory_delta_mb": 0.03125
+        },
+        {
+          "duration_ms": 0.44608116149902344,
+          "memory_start_mb": 28.9375,
+          "memory_end_mb": 28.9375,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 1000,
+      "label": "Small Medium",
+      "actual_size": 1000,
+      "line_count": 37,
+      "iterations": 3,
+      "avg_duration_ms": 0.5409717559814453,
+      "min_duration_ms": 0.5118846893310547,
+      "max_duration_ms": 0.5860328674316406,
+      "std_duration_ms": 0.039571020448791544,
+      "avg_memory_delta_mb": 0.005208333333333333,
+      "avg_chunks_created": 4,
+      "chunks_per_second": 7394.101366240635,
+      "chars_per_second": 1848525.3415601586,
+      "all_results": [
+        {
+          "duration_ms": 0.5860328674316406,
+          "memory_start_mb": 28.9375,
+          "memory_end_mb": 28.9375,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.5249977111816406,
+          "memory_start_mb": 28.9375,
+          "memory_end_mb": 28.953125,
+          "memory_delta_mb": 0.015625
+        },
+        {
+          "duration_ms": 0.5118846893310547,
+          "memory_start_mb": 28.953125,
+          "memory_end_mb": 28.953125,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 1000,
+      "label": "Small Complex",
+      "actual_size": 1000,
+      "line_count": 36,
+      "iterations": 3,
+      "avg_duration_ms": 0.6473859151204427,
+      "min_duration_ms": 0.5960464477539062,
+      "max_duration_ms": 0.6852149963378906,
+      "std_duration_ms": 0.046093984581143645,
+      "avg_memory_delta_mb": 0.015625,
+      "avg_chunks_created": 3,
+      "chunks_per_second": 4634.0211146575,
+      "chars_per_second": 1544673.7048858334,
+      "all_results": [
+        {
+          "duration_ms": 0.6608963012695312,
+          "memory_start_mb": 28.953125,
+          "memory_end_mb": 28.96875,
+          "memory_delta_mb": 0.015625
+        },
+        {
+          "duration_ms": 0.6852149963378906,
+          "memory_start_mb": 28.96875,
+          "memory_end_mb": 29.0,
+          "memory_delta_mb": 0.03125
+        },
+        {
+          "duration_ms": 0.5960464477539062,
+          "memory_start_mb": 29.0,
+          "memory_end_mb": 29.0,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "simple",
+      "size": 5000,
+      "label": "Medium Simple",
+      "actual_size": 5000,
+      "line_count": 221,
+      "iterations": 3,
+      "avg_duration_ms": 1.6913414001464844,
+      "min_duration_ms": 1.6579627990722656,
+      "max_duration_ms": 1.7571449279785156,
+      "std_duration_ms": 0.056989521668734215,
+      "avg_memory_delta_mb": 0.08854166666666667,
+      "avg_chunks_created": 15,
+      "chunks_per_second": 8868.700310121229,
+      "chars_per_second": 2956233.4367070766,
+      "all_results": [
+        {
+          "duration_ms": 1.7571449279785156,
+          "memory_start_mb": 29.0,
+          "memory_end_mb": 29.21875,
+          "memory_delta_mb": 0.21875
+        },
+        {
+          "duration_ms": 1.6579627990722656,
+          "memory_start_mb": 29.21875,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.046875
+        },
+        {
+          "duration_ms": 1.6589164733886719,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 5000,
+      "label": "Medium Medium",
+      "actual_size": 5000,
+      "line_count": 205,
+      "iterations": 3,
+      "avg_duration_ms": 1.672665278116862,
+      "min_duration_ms": 1.5919208526611328,
+      "max_duration_ms": 1.7771720886230469,
+      "std_duration_ms": 0.09488410464255212,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 15,
+      "chunks_per_second": 8967.723666080676,
+      "chars_per_second": 2989241.222026892,
+      "all_results": [
+        {
+          "duration_ms": 1.7771720886230469,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.6489028930664062,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.5919208526611328,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 5000,
+      "label": "Medium Complex",
+      "actual_size": 5000,
+      "line_count": 142,
+      "iterations": 3,
+      "avg_duration_ms": 1.5377203623453777,
+      "min_duration_ms": 1.519918441772461,
+      "max_duration_ms": 1.554250717163086,
+      "std_duration_ms": 0.0172014227021137,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 7,
+      "chunks_per_second": 4552.193084913949,
+      "chars_per_second": 3251566.489224249,
+      "all_results": [
+        {
+          "duration_ms": 1.538991928100586,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.554250717163086,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.519918441772461,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 29.265625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "simple",
+      "size": 20000,
+      "label": "Large Simple",
+      "actual_size": 20000,
+      "line_count": 872,
+      "iterations": 3,
+      "avg_duration_ms": 5.994955698649089,
+      "min_duration_ms": 5.953073501586914,
+      "max_duration_ms": 6.058931350708008,
+      "std_duration_ms": 0.0562810946980063,
+      "avg_memory_delta_mb": 0.4427083333333333,
+      "avg_chunks_created": 54,
+      "chunks_per_second": 9007.572818622903,
+      "chars_per_second": 3336138.080971445,
+      "all_results": [
+        {
+          "duration_ms": 5.953073501586914,
+          "memory_start_mb": 29.265625,
+          "memory_end_mb": 30.34375,
+          "memory_delta_mb": 1.078125
+        },
+        {
+          "duration_ms": 6.058931350708008,
+          "memory_start_mb": 30.34375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.25
+        },
+        {
+          "duration_ms": 5.972862243652344,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 20000,
+      "label": "Large Medium",
+      "actual_size": 20000,
+      "line_count": 853,
+      "iterations": 3,
+      "avg_duration_ms": 6.007273991902669,
+      "min_duration_ms": 5.918979644775391,
+      "max_duration_ms": 6.13093376159668,
+      "std_duration_ms": 0.11031396894485207,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 54,
+      "chunks_per_second": 8989.102223868553,
+      "chars_per_second": 3329297.1199513157,
+      "all_results": [
+        {
+          "duration_ms": 5.9719085693359375,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 5.918979644775391,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 6.13093376159668,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 20000,
+      "label": "Large Complex",
+      "actual_size": 20000,
+      "line_count": 716,
+      "iterations": 3,
+      "avg_duration_ms": 5.8676401774088545,
+      "min_duration_ms": 5.751848220825195,
+      "max_duration_ms": 6.0520172119140625,
+      "std_duration_ms": 0.16141031716701343,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 37,
+      "chunks_per_second": 6305.771806262866,
+      "chars_per_second": 3408525.300682631,
+      "all_results": [
+        {
+          "duration_ms": 6.0520172119140625,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 5.799055099487305,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 5.751848220825195,
+          "memory_start_mb": 30.59375,
+          "memory_end_mb": 30.59375,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 50000,
+      "label": "XLarge Medium",
+      "actual_size": 50000,
+      "line_count": 2152,
+      "iterations": 3,
+      "avg_duration_ms": 15.458027521769205,
+      "min_duration_ms": 15.233039855957031,
+      "max_duration_ms": 15.604972839355469,
+      "std_duration_ms": 0.19786735992168192,
+      "avg_memory_delta_mb": 0.984375,
+      "avg_chunks_created": 133,
+      "chunks_per_second": 8603.943796367226,
+      "chars_per_second": 3234565.3369801603,
+      "all_results": [
+        {
+          "duration_ms": 15.536069869995117,
+          "memory_start_mb": 30.796875,
+          "memory_end_mb": 32.78125,
+          "memory_delta_mb": 1.984375
+        },
+        {
+          "duration_ms": 15.604972839355469,
+          "memory_start_mb": 32.78125,
+          "memory_end_mb": 33.75,
+          "memory_delta_mb": 0.96875
+        },
+        {
+          "duration_ms": 15.233039855957031,
+          "memory_start_mb": 33.75,
+          "memory_end_mb": 33.75,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 50000,
+      "label": "XLarge Complex",
+      "actual_size": 50000,
+      "line_count": 2016,
+      "iterations": 3,
+      "avg_duration_ms": 14.939626057942709,
+      "min_duration_ms": 14.471769332885742,
+      "max_duration_ms": 15.249967575073242,
+      "std_duration_ms": 0.41231833161043074,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 116,
+      "chunks_per_second": 7764.585241297132,
+      "chars_per_second": 3346803.983317729,
+      "all_results": [
+        {
+          "duration_ms": 14.471769332885742,
+          "memory_start_mb": 33.828125,
+          "memory_end_mb": 33.828125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 15.09714126586914,
+          "memory_start_mb": 33.828125,
+          "memory_end_mb": 33.828125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 15.249967575073242,
+          "memory_start_mb": 33.828125,
+          "memory_end_mb": 33.828125,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    }
+  ],
+  "stress_test": {
+    "test_type": "memory_stress",
+    "iterations": 10,
+    "content_size": 100000,
+    "total_chunks_created": 2460,
+    "avg_chunks_per_iteration": 246.0,
+    "duration_ms": 317.66605377197266,
+    "memory_start_mb": 33.96875,
+    "memory_end_mb": 39.59375,
+    "memory_delta_mb": 5.625
+  },
+  "concurrent_test": {
+    "test_type": "concurrent_parsing",
+    "worker_count": 4,
+    "files_processed": 8,
+    "total_chunks_created": 72,
+    "avg_chunks_per_file": 9.0,
+    "avg_parse_time_ms": 0.9934008121490479,
+    "total_wall_time_ms": 10.649919509887695,
+    "parallelization_efficiency": 0.7462222122724932,
+    "duration_ms": 10.649919509887695,
+    "memory_start_mb": 40.21875,
+    "memory_end_mb": 40.328125,
+    "memory_delta_mb": 0.109375,
+    "individual_results": [
+      {
+        "file_id": 4,
+        "chunks_created": 9,
+        "duration_ms": 0.9551048278808594
+      },
+      {
+        "file_id": 1,
+        "chunks_created": 9,
+        "duration_ms": 0.9851455688476562
+      },
+      {
+        "file_id": 3,
+        "chunks_created": 9,
+        "duration_ms": 0.9222030639648438
+      },
+      {
+        "file_id": 5,
+        "chunks_created": 9,
+        "duration_ms": 0.9658336639404297
+      },
+      {
+        "file_id": 0,
+        "chunks_created": 9,
+        "duration_ms": 1.1360645294189453
+      },
+      {
+        "file_id": 2,
+        "chunks_created": 9,
+        "duration_ms": 0.9248256683349609
+      },
+      {
+        "file_id": 6,
+        "chunks_created": 9,
+        "duration_ms": 1.0461807250976562
+      },
+      {
+        "file_id": 7,
+        "chunks_created": 9,
+        "duration_ms": 1.0118484497070312
+      }
+    ]
+  }
+}
