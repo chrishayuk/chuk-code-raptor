@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# tests/chunking/test_semantic_chunk.py
 """
 Comprehensive pytest tests for SemanticChunk class
 ==================================================
