@@ -1,16 +1,16 @@
 # src/chuk_code_raptor/chunking/__init__.py
 """
-Clean Chunking System
-=====================
+Clean Chunking System - Practical Edition
+==========================================
 
 Modern tree-sitter based code chunking with semantic understanding.
-Clean, forward-looking architecture for RAG and AI applications.
+Uses practical parser discovery that automatically adapts to available packages.
 
 Key Components:
 - ChunkingEngine: Main interface for chunking operations
 - BaseParser: Base class for all parsers
 - TreeSitterParser: AST-based semantic parsing
-- HeuristicParser: Pattern-based parsing fallback
+- AvailableTreeSitterParser: Practical parser using available packages
 - ChunkingConfig: Rich configuration system
 - SemanticChunk: Unified chunk model with semantic information
 
@@ -45,6 +45,16 @@ Advanced Usage:
     for chunk in chunks:
         print(f"Tags: {[tag.name for tag in chunk.semantic_tags]}")
         print(f"Dependencies: {chunk.dependencies}")
+
+Package Requirements:
+    For full language support including LaTeX:
+        pip install tree-sitter-languages
+    
+    Alternative comprehensive package:
+        pip install tree-sitter-language-pack
+    
+    Individual packages (LaTeX not available):
+        pip install tree-sitter-python tree-sitter-javascript
 """
 
 import logging
@@ -75,7 +85,13 @@ from .base import (
 
 # Specialized parser bases
 from .tree_sitter_base import TreeSitterParser
-from .heuristic_base import HeuristicParser
+
+# Try to import heuristic base if available
+try:
+    from .heuristic_base import HeuristicParser
+except ImportError:
+    logger.debug("HeuristicParser not available")
+    HeuristicParser = None
 
 # Semantic chunk model
 from .semantic_chunk import (
@@ -111,45 +127,21 @@ except Exception:
     __version__ = "development"
     __author__ = "CodeRaptor Team"
 
-# Check parser availability (RUST REMOVED TO AVOID VERSION CONFLICTS)
-PARSERS_AVAILABLE = {}
+# Use practical parser discovery
+def _get_parser_availability():
+    """Get parser availability using practical discovery"""
+    try:
+        from .parsers import discover_available_parsers, get_installation_help
+        return discover_available_parsers()
+    except ImportError as e:
+        logger.debug(f"Parser discovery not available: {e}")
+        return {}
+    except Exception as e:
+        logger.warning(f"Parser discovery failed: {e}")
+        return {}
 
-def _check_parser_availability():
-    """Check which parsers are available"""
-    parsers_to_check = [
-        ('python', 'chuk_code_raptor.chunking.parsers.python', 'PythonParser'),
-        ('markdown', 'chuk_code_raptor.chunking.parsers.markdown', 'MarkdownParser'),
-        ('javascript', 'chuk_code_raptor.chunking.parsers.javascript', 'JavaScriptParser'),
-        ('json', 'chuk_code_raptor.chunking.parsers.json', 'JSONParser'),
-        ('html', 'chuk_code_raptor.chunking.parsers.html', 'HTMLParser'),
-        # RUST TEMPORARILY REMOVED DUE TO TREE-SITTER VERSION INCOMPATIBILITY
-        # ('rust', 'chuk_code_raptor.chunking.parsers.rust', 'RustParser'),
-    ]
-    
-    available = {}
-    
-    for language, module_path, class_name in parsers_to_check:
-        try:
-            module = __import__(module_path, fromlist=[class_name])
-            parser_class = getattr(module, class_name)
-            # Try to create instance to verify dependencies
-            from .config import ChunkingConfig
-            test_instance = parser_class(ChunkingConfig())
-            available[language] = {
-                'module': module_path,
-                'class': class_name,
-                'parser_type': getattr(test_instance, 'parser_type', 'unknown')
-            }
-            logger.debug(f"Parser available: {language} ({test_instance.parser_type})")
-        except ImportError as e:
-            logger.debug(f"Parser {language} not available: missing dependencies ({e})")
-        except Exception as e:
-            logger.debug(f"Parser {language} failed initialization: {e}")
-    
-    return available
-
-# Check availability on import
-PARSERS_AVAILABLE = _check_parser_availability()
+# Get available parsers
+PARSERS_AVAILABLE = _get_parser_availability()
 
 # Main exports
 __all__ = [
@@ -170,7 +162,6 @@ __all__ = [
     # Base classes
     'BaseParser',
     'TreeSitterParser',
-    'HeuristicParser',
     'ParseContext',
     
     # Semantic model
@@ -194,7 +185,12 @@ __all__ = [
     'get_supported_languages',
     'get_supported_extensions',
     'get_parser_info',
+    'get_installation_help',
 ]
+
+# Add HeuristicParser to exports if available
+if HeuristicParser is not None:
+    __all__.append('HeuristicParser')
 
 # Convenience functions for common use cases
 def create_engine(config: ChunkingConfig = None) -> ChunkingEngine:
@@ -253,25 +249,82 @@ def get_supported_extensions() -> list[str]:
 
 def get_parser_info() -> dict:
     """Get information about available parsers."""
+    working_parsers = {k: v for k, v in PARSERS_AVAILABLE.items() 
+                      if k != '_package_info' and isinstance(v, dict) and v.get('status') == 'available'}
+    
+    package_info = PARSERS_AVAILABLE.get('_package_info', {})
+    
     return {
-        'available_parsers': PARSERS_AVAILABLE,
-        'total_parsers': len(PARSERS_AVAILABLE),
-        'parser_types': list(set(info['parser_type'] for info in PARSERS_AVAILABLE.values())),
+        'available_parsers': working_parsers,
+        'total_parsers': len(working_parsers),
+        'parser_types': list(set(info.get('parser_type', 'unknown') for info in working_parsers.values())),
         'supported_languages': get_supported_languages(),
+        'package_info': package_info,
     }
+
+def get_installation_help() -> str:
+    """Get help for installing tree-sitter packages."""
+    try:
+        from .parsers import get_installation_help as get_help_impl
+        return get_help_impl()
+    except ImportError:
+        return """
+🌲 Tree-sitter Package Installation:
+
+Install comprehensive package for full language support:
+    pip install tree-sitter-languages
+
+Alternative comprehensive package:
+    pip install tree-sitter-language-pack
+
+Individual packages (limited language support):
+    pip install tree-sitter-python tree-sitter-javascript
+
+Note: LaTeX requires a comprehensive package.
+"""
+    except Exception as e:
+        logger.debug(f"Error getting installation help: {e}")
+        return "Installation help not available. Try: pip install tree-sitter-languages"
 
 # Auto-initialization and status
 def _log_initialization_status():
-    """Log initialization status"""
-    if PARSERS_AVAILABLE:
-        available_langs = list(PARSERS_AVAILABLE.keys())
-        parser_types = list(set(info['parser_type'] for info in PARSERS_AVAILABLE.values()))
+    """Log initialization status using practical discovery"""
+    try:
+        package_info = PARSERS_AVAILABLE.get('_package_info', {})
+        working_parsers = {k: v for k, v in PARSERS_AVAILABLE.items() 
+                          if k != '_package_info' and isinstance(v, dict) and v.get('status') == 'available'}
         
-        logger.info(f"Clean chunking system initialized")
-        logger.info(f"Available parsers: {len(PARSERS_AVAILABLE)} ({', '.join(available_langs)})")
-        logger.info(f"Parser types: {', '.join(parser_types)}")
-    else:
-        logger.warning("No parsers available - check tree-sitter dependencies")
+        if working_parsers:
+            available_langs = list(working_parsers.keys())
+            parser_types = list(set(info.get('parser_type', 'unknown') for info in working_parsers.values()))
+            
+            logger.info(f"Clean chunking system initialized")
+            logger.info(f"Available parsers: {len(working_parsers)} ({', '.join(available_langs)})")
+            logger.info(f"Parser types: {', '.join(parser_types)}")
+            
+            # Show package info
+            if package_info.get('comprehensive_packages'):
+                logger.info(f"Using comprehensive packages: {', '.join(package_info['comprehensive_packages'])}")
+            elif package_info.get('individual_packages'):
+                logger.info(f"Using individual packages: {len(package_info['individual_packages'])}")
+            
+        else:
+            logger.warning("No tree-sitter parsers available")
+            
+            if not package_info.get('comprehensive_packages') and not package_info.get('individual_packages'):
+                logger.info("💡 Install tree-sitter-languages for full support: pip install tree-sitter-languages")
+            else:
+                logger.info("💡 Some parsers may need additional packages")
+    
+    except Exception as e:
+        logger.debug(f"Error during initialization logging: {e}")
+        logger.warning("Parser status check failed - some parsers may not be available")
 
 # Initialize on import
 _log_initialization_status()
+
+# Backward compatibility aliases
+def _check_parser_availability():
+    """Backward compatibility function"""
+    logger.warning("_check_parser_availability is deprecated. Use get_parser_info() instead.")
+    return get_parser_info()
