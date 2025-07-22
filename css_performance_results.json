@@ -1,0 +1,650 @@
+{
+  "timestamp": 1753222475.8622,
+  "parser_type": "css",
+  "system_info": {
+    "python_version": "3.11.10 (main, Oct 16 2024, 08:56:36) [Clang 18.1.8 ]",
+    "platform": "darwin",
+    "cpu_count": 16,
+    "memory_total_gb": 128.0
+  },
+  "scalability_tests": [
+    {
+      "complexity": "simple",
+      "size": 1000,
+      "label": "Small Simple CSS",
+      "actual_size": 1000,
+      "line_count": 72,
+      "css_structure": {
+        "selectors": 12,
+        "media_queries": 0,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 0,
+        "pseudo_selectors": 3,
+        "max_nesting_depth": 2,
+        "grid_usage": 0,
+        "flexbox_usage": 1,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": false,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 0.4793802897135417,
+      "min_duration_ms": 0.3409385681152344,
+      "max_duration_ms": 0.7481575012207031,
+      "std_duration_ms": 0.23280317827990413,
+      "avg_memory_delta_mb": 0.10416666666666667,
+      "avg_chunks_created": 10,
+      "chunks_per_second": 20860.26525198939,
+      "chars_per_second": 2086026.525198939,
+      "all_results": [
+        {
+          "duration_ms": 0.7481575012207031,
+          "memory_start_mb": 29.75,
+          "memory_end_mb": 30.015625,
+          "memory_delta_mb": 0.265625
+        },
+        {
+          "duration_ms": 0.3490447998046875,
+          "memory_start_mb": 30.015625,
+          "memory_end_mb": 30.046875,
+          "memory_delta_mb": 0.03125
+        },
+        {
+          "duration_ms": 0.3409385681152344,
+          "memory_start_mb": 30.046875,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.015625
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 1000,
+      "label": "Small Medium CSS",
+      "actual_size": 1000,
+      "line_count": 48,
+      "css_structure": {
+        "selectors": 7,
+        "media_queries": 0,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 11,
+        "pseudo_selectors": 1,
+        "max_nesting_depth": 2,
+        "grid_usage": 2,
+        "flexbox_usage": 0,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": false,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 0.26297569274902344,
+      "min_duration_ms": 0.24700164794921875,
+      "max_duration_ms": 0.2779960632324219,
+      "std_duration_ms": 0.015519199905705305,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 5,
+      "chunks_per_second": 19013.164097914778,
+      "chars_per_second": 3802632.8195829554,
+      "all_results": [
+        {
+          "duration_ms": 0.2779960632324219,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.24700164794921875,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.2639293670654297,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 1000,
+      "label": "Small Complex CSS",
+      "actual_size": 1000,
+      "line_count": 32,
+      "css_structure": {
+        "selectors": 1,
+        "media_queries": 0,
+        "keyframes": 0,
+        "imports": 1,
+        "custom_properties": 29,
+        "pseudo_selectors": 0,
+        "max_nesting_depth": 2,
+        "grid_usage": 0,
+        "flexbox_usage": 0,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": false,
+        "uses_modern_features": false
+      },
+      "iterations": 3,
+      "avg_duration_ms": 0.41294097900390625,
+      "min_duration_ms": 0.39386749267578125,
+      "max_duration_ms": 0.43392181396484375,
+      "std_duration_ms": 0.020095164781289556,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 4,
+      "chunks_per_second": 9686.614318706697,
+      "chars_per_second": 2421653.579676674,
+      "all_results": [
+        {
+          "duration_ms": 0.43392181396484375,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.41103363037109375,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.39386749267578125,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.0625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "simple",
+      "size": 5000,
+      "label": "Medium Simple CSS",
+      "actual_size": 5000,
+      "line_count": 349,
+      "css_structure": {
+        "selectors": 54,
+        "media_queries": 0,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 0,
+        "pseudo_selectors": 24,
+        "max_nesting_depth": 2,
+        "grid_usage": 0,
+        "flexbox_usage": 1,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": false,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 1.4580090840657551,
+      "min_duration_ms": 1.4491081237792969,
+      "max_duration_ms": 1.4758110046386719,
+      "std_duration_ms": 0.015416915452298662,
+      "avg_memory_delta_mb": 0.20833333333333334,
+      "avg_chunks_created": 53,
+      "chunks_per_second": 36350.93949634798,
+      "chars_per_second": 3429333.9147498095,
+      "all_results": [
+        {
+          "duration_ms": 1.4491081237792969,
+          "memory_start_mb": 30.0625,
+          "memory_end_mb": 30.40625,
+          "memory_delta_mb": 0.34375
+        },
+        {
+          "duration_ms": 1.4491081237792969,
+          "memory_start_mb": 30.40625,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.28125
+        },
+        {
+          "duration_ms": 1.4758110046386719,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 5000,
+      "label": "Medium Medium CSS",
+      "actual_size": 5000,
+      "line_count": 301,
+      "css_structure": {
+        "selectors": 51,
+        "media_queries": 9,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 19,
+        "pseudo_selectors": 2,
+        "max_nesting_depth": 4,
+        "grid_usage": 3,
+        "flexbox_usage": 14,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": true,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 1.196463902791341,
+      "min_duration_ms": 1.171112060546875,
+      "max_duration_ms": 1.2233257293701172,
+      "std_duration_ms": 0.02613956469632192,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 36,
+      "chunks_per_second": 30088.66369976752,
+      "chars_per_second": 4178981.0694121555,
+      "all_results": [
+        {
+          "duration_ms": 1.2233257293701172,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.171112060546875,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 1.1949539184570312,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 5000,
+      "label": "Medium Complex CSS",
+      "actual_size": 5000,
+      "line_count": 221,
+      "css_structure": {
+        "selectors": 36,
+        "media_queries": 0,
+        "keyframes": 4,
+        "imports": 1,
+        "custom_properties": 52,
+        "pseudo_selectors": 3,
+        "max_nesting_depth": 4,
+        "grid_usage": 11,
+        "flexbox_usage": 1,
+        "container_queries": 2,
+        "has_animations": true,
+        "is_responsive": false,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 0.9257793426513672,
+      "min_duration_ms": 0.904083251953125,
+      "max_duration_ms": 0.9450912475585938,
+      "std_duration_ms": 0.0206076971617184,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 25,
+      "chunks_per_second": 27004.275045068247,
+      "chars_per_second": 5400855.009013649,
+      "all_results": [
+        {
+          "duration_ms": 0.9281635284423828,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.9450912475585938,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 0.904083251953125,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 30.6875,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "simple",
+      "size": 20000,
+      "label": "Large Simple CSS",
+      "actual_size": 20000,
+      "line_count": 1377,
+      "css_structure": {
+        "selectors": 213,
+        "media_queries": 0,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 0,
+        "pseudo_selectors": 103,
+        "max_nesting_depth": 2,
+        "grid_usage": 0,
+        "flexbox_usage": 1,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": false,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 5.710601806640625,
+      "min_duration_ms": 5.623817443847656,
+      "max_duration_ms": 5.836009979248047,
+      "std_duration_ms": 0.11124417752560711,
+      "avg_memory_delta_mb": 0.7552083333333334,
+      "avg_chunks_created": 211,
+      "chunks_per_second": 36948.82030728123,
+      "chars_per_second": 3502257.849031396,
+      "all_results": [
+        {
+          "duration_ms": 5.836009979248047,
+          "memory_start_mb": 30.6875,
+          "memory_end_mb": 31.828125,
+          "memory_delta_mb": 1.140625
+        },
+        {
+          "duration_ms": 5.623817443847656,
+          "memory_start_mb": 31.828125,
+          "memory_end_mb": 32.9375,
+          "memory_delta_mb": 1.109375
+        },
+        {
+          "duration_ms": 5.671977996826172,
+          "memory_start_mb": 32.9375,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.015625
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 20000,
+      "label": "Large Medium CSS",
+      "actual_size": 20000,
+      "line_count": 1273,
+      "css_structure": {
+        "selectors": 213,
+        "media_queries": 41,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 19,
+        "pseudo_selectors": 2,
+        "max_nesting_depth": 4,
+        "grid_usage": 3,
+        "flexbox_usage": 78,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": true,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 4.619201024373372,
+      "min_duration_ms": 4.575967788696289,
+      "max_duration_ms": 4.674673080444336,
+      "std_duration_ms": 0.0504779674535535,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 166,
+      "chunks_per_second": 35936.950811210714,
+      "chars_per_second": 4329753.109784423,
+      "all_results": [
+        {
+          "duration_ms": 4.575967788696289,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 4.674673080444336,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 4.606962203979492,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 20000,
+      "label": "Large Complex CSS",
+      "actual_size": 20000,
+      "line_count": 870,
+      "css_structure": {
+        "selectors": 172,
+        "media_queries": 2,
+        "keyframes": 20,
+        "imports": 1,
+        "custom_properties": 134,
+        "pseudo_selectors": 3,
+        "max_nesting_depth": 4,
+        "grid_usage": 61,
+        "flexbox_usage": 1,
+        "container_queries": 18,
+        "has_animations": true,
+        "is_responsive": true,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 3.505547841389974,
+      "min_duration_ms": 3.35693359375,
+      "max_duration_ms": 3.622770309448242,
+      "std_duration_ms": 0.1356700877949403,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 92,
+      "chunks_per_second": 26244.11480389934,
+      "chars_per_second": 5705242.34867377,
+      "all_results": [
+        {
+          "duration_ms": 3.35693359375,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 3.5369396209716797,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 3.622770309448242,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 32.953125,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    },
+    {
+      "complexity": "medium",
+      "size": 50000,
+      "label": "XLarge Medium CSS",
+      "actual_size": 50000,
+      "line_count": 3216,
+      "css_structure": {
+        "selectors": 537,
+        "media_queries": 106,
+        "keyframes": 0,
+        "imports": 0,
+        "custom_properties": 19,
+        "pseudo_selectors": 2,
+        "max_nesting_depth": 4,
+        "grid_usage": 3,
+        "flexbox_usage": 208,
+        "container_queries": 0,
+        "has_animations": false,
+        "is_responsive": true,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 12.336413065592447,
+      "min_duration_ms": 12.021064758300781,
+      "max_duration_ms": 12.865066528320312,
+      "std_duration_ms": 0.4606615503281893,
+      "avg_memory_delta_mb": 1.203125,
+      "avg_chunks_created": 425,
+      "chunks_per_second": 34450.85680418481,
+      "chars_per_second": 4053041.9769629193,
+      "all_results": [
+        {
+          "duration_ms": 12.021064758300781,
+          "memory_start_mb": 32.953125,
+          "memory_end_mb": 33.828125,
+          "memory_delta_mb": 0.875
+        },
+        {
+          "duration_ms": 12.12310791015625,
+          "memory_start_mb": 33.828125,
+          "memory_end_mb": 36.140625,
+          "memory_delta_mb": 2.3125
+        },
+        {
+          "duration_ms": 12.865066528320312,
+          "memory_start_mb": 36.140625,
+          "memory_end_mb": 36.5625,
+          "memory_delta_mb": 0.421875
+        }
+      ]
+    },
+    {
+      "complexity": "complex",
+      "size": 50000,
+      "label": "XLarge Complex CSS",
+      "actual_size": 50000,
+      "line_count": 2141,
+      "css_structure": {
+        "selectors": 440,
+        "media_queries": 2,
+        "keyframes": 54,
+        "imports": 1,
+        "custom_properties": 301,
+        "pseudo_selectors": 3,
+        "max_nesting_depth": 4,
+        "grid_usage": 160,
+        "flexbox_usage": 1,
+        "container_queries": 51,
+        "has_animations": true,
+        "is_responsive": true,
+        "uses_modern_features": true
+      },
+      "iterations": 3,
+      "avg_duration_ms": 8.454243342081705,
+      "min_duration_ms": 8.347749710083008,
+      "max_duration_ms": 8.599042892456055,
+      "std_duration_ms": 0.12995219664840174,
+      "avg_memory_delta_mb": 0.0,
+      "avg_chunks_created": 225,
+      "chunks_per_second": 26613.85423814851,
+      "chars_per_second": 5914189.830699668,
+      "all_results": [
+        {
+          "duration_ms": 8.347749710083008,
+          "memory_start_mb": 36.5625,
+          "memory_end_mb": 36.5625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 8.415937423706055,
+          "memory_start_mb": 36.5625,
+          "memory_end_mb": 36.5625,
+          "memory_delta_mb": 0.0
+        },
+        {
+          "duration_ms": 8.599042892456055,
+          "memory_start_mb": 36.5625,
+          "memory_end_mb": 36.5625,
+          "memory_delta_mb": 0.0
+        }
+      ]
+    }
+  ],
+  "stress_test": {
+    "test_type": "css_memory_stress",
+    "iterations": 10,
+    "content_size": 100000,
+    "total_chunks_created": 4490,
+    "avg_chunks_per_iteration": 449.0,
+    "duration_ms": 177.11281776428223,
+    "memory_start_mb": 36.703125,
+    "memory_end_mb": 40.3125,
+    "memory_delta_mb": 3.609375
+  },
+  "concurrent_test": {
+    "test_type": "concurrent_css_parsing",
+    "worker_count": 4,
+    "files_processed": 8,
+    "total_chunks_created": 189,
+    "total_content_size": 26000,
+    "avg_chunks_per_file": 23.625,
+    "avg_parse_time_ms": 0.754237174987793,
+    "total_wall_time_ms": 8.5601806640625,
+    "parallelization_efficiency": 0.704879679144385,
+    "total_chars_per_second": 3037319.073083779,
+    "duration_ms": 8.5601806640625,
+    "memory_start_mb": 39.34375,
+    "memory_end_mb": 39.375,
+    "memory_delta_mb": 0.03125,
+    "individual_results": [
+      {
+        "file_id": 4,
+        "chunks_created": 28,
+        "duration_ms": 0.8959770202636719,
+        "content_size": 4000
+      },
+      {
+        "file_id": 1,
+        "chunks_created": 20,
+        "duration_ms": 0.7069110870361328,
+        "content_size": 3000
+      },
+      {
+        "file_id": 3,
+        "chunks_created": 42,
+        "duration_ms": 1.2197494506835938,
+        "content_size": 4000
+      },
+      {
+        "file_id": 0,
+        "chunks_created": 31,
+        "duration_ms": 0.9400844573974609,
+        "content_size": 3000
+      },
+      {
+        "file_id": 2,
+        "chunks_created": 11,
+        "duration_ms": 0.47898292541503906,
+        "content_size": 3000
+      },
+      {
+        "file_id": 5,
+        "chunks_created": 16,
+        "duration_ms": 0.6070137023925781,
+        "content_size": 4000
+      },
+      {
+        "file_id": 6,
+        "chunks_created": 26,
+        "duration_ms": 0.6880760192871094,
+        "content_size": 2500
+      },
+      {
+        "file_id": 7,
+        "chunks_created": 15,
+        "duration_ms": 0.4971027374267578,
+        "content_size": 2500
+      }
+    ]
+  }
+}

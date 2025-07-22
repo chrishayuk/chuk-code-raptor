@@ -1,16 +1,17 @@
 # src/chuk_code_raptor/chunking/__init__.py
 """
-Clean Chunking System - Practical Edition
-==========================================
+Clean Chunking System - Pure Registry Edition
+=============================================
 
 Modern tree-sitter based code chunking with semantic understanding.
-Uses practical parser discovery that automatically adapts to available packages.
+Everything is configured through YAML - no hardcoding anywhere.
 
 Key Components:
 - ChunkingEngine: Main interface for chunking operations
+- ParserRegistry: YAML-based parser management system
 - BaseParser: Base class for all parsers
 - TreeSitterParser: AST-based semantic parsing
-- AvailableTreeSitterParser: Practical parser using available packages
+- HeuristicParser: Pattern-based parsing for unsupported languages
 - ChunkingConfig: Rich configuration system
 - SemanticChunk: Unified chunk model with semantic information
 
@@ -24,37 +25,12 @@ Basic Usage:
     for chunk in chunks:
         print(f"{chunk.chunk_type.value}: {chunk.content_preview}")
 
-Advanced Usage:
-    from chuk_code_raptor.chunking import (
-        ChunkingEngine, 
-        ChunkingConfig,
-        ChunkingStrategy,
-        PRECISE_CONFIG
-    )
+Registry Usage:
+    from chuk_code_raptor.chunking import get_registry
     
-    # Use predefined configuration
-    engine = ChunkingEngine(PRECISE_CONFIG)
-    
-    # Check supported languages
-    print(f"Supported: {engine.get_supported_languages()}")
-    
-    # Chunk content directly
-    chunks = engine.chunk_content(code_string, "python", "file.py")
-    
-    # Access semantic information
-    for chunk in chunks:
-        print(f"Tags: {[tag.name for tag in chunk.semantic_tags]}")
-        print(f"Dependencies: {chunk.dependencies}")
-
-Package Requirements:
-    For full language support including LaTeX:
-        pip install tree-sitter-languages
-    
-    Alternative comprehensive package:
-        pip install tree-sitter-language-pack
-    
-    Individual packages (LaTeX not available):
-        pip install tree-sitter-python tree-sitter-javascript
+    registry = get_registry()
+    print(f"Config: {registry.config_path}")
+    print(f"Languages: {registry.get_supported_languages()}")
 """
 
 import logging
@@ -83,15 +59,9 @@ from .base import (
     InvalidContentError
 )
 
-# Specialized parser bases
+# Specialized parser bases (always available)
 from .tree_sitter_base import TreeSitterParser
-
-# Try to import heuristic base if available
-try:
-    from .heuristic_base import HeuristicParser
-except ImportError:
-    logger.debug("HeuristicParser not available")
-    HeuristicParser = None
+from .heuristic_base import HeuristicParser
 
 # Semantic chunk model
 from .semantic_chunk import (
@@ -104,6 +74,14 @@ from .semantic_chunk import (
     find_related_chunks
 )
 
+# Registry system (always available)
+from .parsers.registry import (
+    ParserRegistry,
+    get_registry,
+    reload_registry,
+    register_custom_parser
+)
+
 # Main engine
 from .engine import ChunkingEngine
 
@@ -111,10 +89,8 @@ from .engine import ChunkingEngine
 try:
     from importlib.metadata import version, metadata
     __version__ = version("chuk_code_raptor")
-    
     pkg_metadata = metadata("chuk_code_raptor")
     __author__ = pkg_metadata.get("Author", "CodeRaptor Team")
-    
 except ImportError:
     try:
         import pkg_resources
@@ -126,22 +102,6 @@ except ImportError:
 except Exception:
     __version__ = "development"
     __author__ = "CodeRaptor Team"
-
-# Use practical parser discovery
-def _get_parser_availability():
-    """Get parser availability using practical discovery"""
-    try:
-        from .parsers import discover_available_parsers, get_installation_help
-        return discover_available_parsers()
-    except ImportError as e:
-        logger.debug(f"Parser discovery not available: {e}")
-        return {}
-    except Exception as e:
-        logger.warning(f"Parser discovery failed: {e}")
-        return {}
-
-# Get available parsers
-PARSERS_AVAILABLE = _get_parser_availability()
 
 # Main exports
 __all__ = [
@@ -162,6 +122,7 @@ __all__ = [
     # Base classes
     'BaseParser',
     'TreeSitterParser',
+    'HeuristicParser',
     'ParseContext',
     
     # Semantic model
@@ -178,6 +139,12 @@ __all__ = [
     'UnsupportedLanguageError',
     'InvalidContentError',
     
+    # Registry system
+    'ParserRegistry',
+    'get_registry',
+    'reload_registry', 
+    'register_custom_parser',
+    
     # Convenience functions
     'create_engine',
     'chunk_file',
@@ -188,143 +155,72 @@ __all__ = [
     'get_installation_help',
 ]
 
-# Add HeuristicParser to exports if available
-if HeuristicParser is not None:
-    __all__.append('HeuristicParser')
-
 # Convenience functions for common use cases
 def create_engine(config: ChunkingConfig = None) -> ChunkingEngine:
-    """
-    Create a ChunkingEngine with optional configuration.
-    
-    Args:
-        config: ChunkingConfig to use (uses DEFAULT_CONFIG if None)
-        
-    Returns:
-        Configured ChunkingEngine instance
-    """
+    """Create a ChunkingEngine with optional configuration."""
     return ChunkingEngine(config or DEFAULT_CONFIG)
 
 def chunk_file(file_path: str, language: str = None, config: ChunkingConfig = None):
-    """
-    Convenience function to chunk a file with default settings.
-    
-    Args:
-        file_path: Path to file to chunk
-        language: Programming language (auto-detected if None)
-        config: ChunkingConfig to use (uses DEFAULT_CONFIG if None)
-        
-    Returns:
-        List of SemanticChunk objects
-    """
+    """Convenience function to chunk a file with default settings."""
     engine = create_engine(config)
     return engine.chunk_file(file_path, language)
 
 def chunk_content(content: str, language: str, file_path: str = "unknown", 
                  config: ChunkingConfig = None):
-    """
-    Convenience function to chunk content with default settings.
-    
-    Args:
-        content: Content to chunk
-        language: Programming language
-        file_path: Source file path (for metadata)
-        config: ChunkingConfig to use (uses DEFAULT_CONFIG if None)
-        
-    Returns:
-        List of SemanticChunk objects
-    """
+    """Convenience function to chunk content with default settings."""
     engine = create_engine(config)
     return engine.chunk_content(content, language, file_path)
 
 def get_supported_languages() -> list[str]:
     """Get list of all supported programming languages."""
-    engine = create_engine()
-    return engine.get_supported_languages()
+    registry = get_registry()
+    return registry.get_supported_languages()
 
 def get_supported_extensions() -> list[str]:
     """Get list of all supported file extensions."""
-    engine = create_engine()
-    return engine.get_supported_extensions()
+    registry = get_registry()
+    return registry.get_supported_extensions()
 
 def get_parser_info() -> dict:
     """Get information about available parsers."""
-    working_parsers = {k: v for k, v in PARSERS_AVAILABLE.items() 
-                      if k != '_package_info' and isinstance(v, dict) and v.get('status') == 'available'}
-    
-    package_info = PARSERS_AVAILABLE.get('_package_info', {})
-    
+    registry = get_registry()
+    stats = registry.get_parser_stats()
     return {
-        'available_parsers': working_parsers,
-        'total_parsers': len(working_parsers),
-        'parser_types': list(set(info.get('parser_type', 'unknown') for info in working_parsers.values())),
-        'supported_languages': get_supported_languages(),
-        'package_info': package_info,
+        'total_parsers': stats['total_parsers'],
+        'available_parsers': stats['available_parsers'],
+        'supported_languages': len(registry.get_supported_languages()),
+        'supported_extensions': len(registry.get_supported_extensions()),
+        'parser_types': stats['parser_types'],
+        'package_availability': stats['package_availability'],
+        'config_file': str(registry.config_path)
     }
 
 def get_installation_help() -> str:
     """Get help for installing tree-sitter packages."""
-    try:
-        from .parsers import get_installation_help as get_help_impl
-        return get_help_impl()
-    except ImportError:
-        return """
-🌲 Tree-sitter Package Installation:
-
-Install comprehensive package for full language support:
-    pip install tree-sitter-languages
-
-Alternative comprehensive package:
-    pip install tree-sitter-language-pack
-
-Individual packages (limited language support):
-    pip install tree-sitter-python tree-sitter-javascript
-
-Note: LaTeX requires a comprehensive package.
-"""
-    except Exception as e:
-        logger.debug(f"Error getting installation help: {e}")
-        return "Installation help not available. Try: pip install tree-sitter-languages"
+    registry = get_registry()
+    return registry.get_installation_help()
 
 # Auto-initialization and status
 def _log_initialization_status():
-    """Log initialization status using practical discovery"""
+    """Log initialization status"""
     try:
-        package_info = PARSERS_AVAILABLE.get('_package_info', {})
-        working_parsers = {k: v for k, v in PARSERS_AVAILABLE.items() 
-                          if k != '_package_info' and isinstance(v, dict) and v.get('status') == 'available'}
+        registry = get_registry()
+        stats = registry.get_parser_stats()
         
-        if working_parsers:
-            available_langs = list(working_parsers.keys())
-            parser_types = list(set(info.get('parser_type', 'unknown') for info in working_parsers.values()))
-            
-            logger.info(f"Clean chunking system initialized")
-            logger.info(f"Available parsers: {len(working_parsers)} ({', '.join(available_langs)})")
-            logger.info(f"Parser types: {', '.join(parser_types)}")
-            
-            # Show package info
-            if package_info.get('comprehensive_packages'):
-                logger.info(f"Using comprehensive packages: {', '.join(package_info['comprehensive_packages'])}")
-            elif package_info.get('individual_packages'):
-                logger.info(f"Using individual packages: {len(package_info['individual_packages'])}")
-            
-        else:
-            logger.warning("No tree-sitter parsers available")
-            
-            if not package_info.get('comprehensive_packages') and not package_info.get('individual_packages'):
-                logger.info("💡 Install tree-sitter-languages for full support: pip install tree-sitter-languages")
-            else:
-                logger.info("💡 Some parsers may need additional packages")
-    
+        logger.info(f"Clean chunking system initialized with YAML registry")
+        logger.info(f"Configuration file: {registry.config_path}")
+        logger.info(f"Total parsers: {stats['total_parsers']}")
+        logger.info(f"Available parsers: {stats['available_parsers']}")
+        logger.info(f"Supported languages: {stats['supported_languages']}")
+        logger.info(f"Supported extensions: {stats['supported_extensions']}")
+        
+        if stats['available_parsers'] == 0:
+            logger.warning("No parsers available - install tree-sitter packages")
+            logger.info("💡 Install tree-sitter packages for full functionality")
+        
     except Exception as e:
         logger.debug(f"Error during initialization logging: {e}")
         logger.warning("Parser status check failed - some parsers may not be available")
 
 # Initialize on import
 _log_initialization_status()
-
-# Backward compatibility aliases
-def _check_parser_availability():
-    """Backward compatibility function"""
-    logger.warning("_check_parser_availability is deprecated. Use get_parser_info() instead.")
-    return get_parser_info()

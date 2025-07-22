@@ -1,9 +1,10 @@
 # src/chuk_code_raptor/chunking/tree_sitter_base.py
 """
-Tree-sitter Base Parser
-======================
+Tree-sitter Base Parser - Robust Edition
+========================================
 
-Base class for tree-sitter based parsers. Clean implementation extending BaseParser.
+Base class for tree-sitter based parsers with robust package handling.
+Handles different tree-sitter package API variations gracefully.
 """
 
 from abc import abstractmethod
@@ -17,13 +18,15 @@ from chuk_code_raptor.core.models import ChunkType
 logger = logging.getLogger(__name__)
 
 class TreeSitterParser(BaseParser):
-    """Base class for tree-sitter based parsers"""
+    """Base class for tree-sitter based parsers with robust initialization"""
     
     def __init__(self, config):
         super().__init__(config)
         self.parser_type = "tree_sitter"
         self.parser = None
         self.language = None
+        self._package_used = None
+        self._initialization_error = None
         self._initialize_tree_sitter()
     
     @abstractmethod
@@ -42,22 +45,36 @@ class TreeSitterParser(BaseParser):
         pass
     
     def _initialize_tree_sitter(self):
-        """Initialize tree-sitter parser"""
+        """Initialize tree-sitter parser with robust error handling"""
         try:
             import tree_sitter
             
             self.language = self._get_tree_sitter_language()
             self.parser = tree_sitter.Parser(self.language)
-            logger.debug(f"Initialized tree-sitter parser for {self.name}")
+            logger.debug(f"✅ Initialized tree-sitter parser for {self.name}")
             
-        except ImportError:
-            raise ImportError(f"tree-sitter not available for {self.name}")
+        except ImportError as e:
+            self._initialization_error = f"tree-sitter not available: {e}"
+            logger.debug(f"❌ {self.name}: {self._initialization_error}")
+        except AttributeError as e:
+            self._initialization_error = f"tree-sitter package API incompatible: {e}"
+            logger.debug(f"❌ {self.name}: {self._initialization_error}")
         except Exception as e:
-            logger.error(f"Failed to initialize tree-sitter for {self.name}: {e}")
-            raise
+            self._initialization_error = f"tree-sitter initialization failed: {e}"
+            logger.debug(f"❌ {self.name}: {self._initialization_error}")
+    
+    def can_parse(self, language: str, file_extension: str) -> bool:
+        """Check if this parser can handle the language/extension"""
+        # Only return True if tree-sitter is properly initialized
+        return (self.parser is not None and self.language is not None and
+                (language in self.supported_languages or 
+                 file_extension in self.supported_extensions))
     
     def parse(self, content: str, context: ParseContext) -> List[SemanticChunk]:
         """Parse content using tree-sitter"""
+        if self.parser is None or self.language is None:
+            raise ImportError(f"Parser {self.name} not properly initialized: {self._initialization_error}")
+        
         if not content.strip():
             return []
         
@@ -119,6 +136,7 @@ class TreeSitterParser(BaseParser):
                 'identifier': identifier,
                 'byte_range': (node.start_byte, node.end_byte),
                 'ast_depth': self._get_node_depth(node),
+                'package_used': self._package_used,
             }
         )
         
@@ -184,3 +202,88 @@ class TreeSitterParser(BaseParser):
         """Extract dependencies - override in subclasses for language-specific dependencies"""
         # Basic dependency extraction - subclasses should override
         pass
+
+
+# Utility functions for robust tree-sitter package handling
+
+def get_tree_sitter_language_robust(language_name: str, package_candidates: List[str] = None):
+    """
+    Robustly get a tree-sitter language, trying multiple package variations.
+    
+    Args:
+        language_name: Name of the language (e.g., 'python', 'xml')
+        package_candidates: List of package names to try, in order of preference
+    
+    Returns:
+        tuple: (language_object, package_used) or (None, None) if failed
+    """
+    import tree_sitter
+    
+    if package_candidates is None:
+        package_candidates = [
+            f'tree_sitter_{language_name}',
+            f'tree_sitter_languages',
+            f'tree_sitter_language_pack'
+        ]
+    
+    for package_name in package_candidates:
+        try:
+            if package_name in ['tree_sitter_languages', 'tree_sitter_language_pack']:
+                # Try comprehensive packages
+                if package_name == 'tree_sitter_languages':
+                    from tree_sitter_languages import get_language
+                    language_obj = get_language(language_name)
+                    return tree_sitter.Language(language_obj), package_name
+                elif package_name == 'tree_sitter_language_pack':
+                    from tree_sitter_language_pack import get_language
+                    language_obj = get_language(language_name)
+                    return tree_sitter.Language(language_obj), package_name
+            else:
+                # Try individual packages
+                module = __import__(package_name, fromlist=['language'])
+                
+                # Try different API variations
+                if hasattr(module, 'language') and callable(getattr(module, 'language')):
+                    # Most common API: module.language()
+                    language_obj = module.language()
+                    return tree_sitter.Language(language_obj), package_name
+                elif hasattr(module, 'LANGUAGE'):
+                    # Alternative API: module.LANGUAGE
+                    language_obj = module.LANGUAGE
+                    return tree_sitter.Language(language_obj), package_name
+                elif hasattr(module, f'{language_name.upper()}_LANGUAGE'):
+                    # Alternative API: module.PYTHON_LANGUAGE
+                    language_obj = getattr(module, f'{language_name.upper()}_LANGUAGE')
+                    return tree_sitter.Language(language_obj), package_name
+                else:
+                    logger.debug(f"Package {package_name} found but no compatible API")
+                    continue
+                    
+        except ImportError:
+            logger.debug(f"Package {package_name} not available")
+            continue
+        except Exception as e:
+            logger.debug(f"Package {package_name} failed: {e}")
+            continue
+    
+    return None, None
+
+
+def create_robust_tree_sitter_parser(language_name: str, package_candidates: List[str] = None):
+    """
+    Create a robust tree-sitter parser that handles package variations.
+    
+    This is a helper for creating parsers that can handle different tree-sitter
+    package APIs gracefully.
+    """
+    language, package_used = get_tree_sitter_language_robust(language_name, package_candidates)
+    
+    if language is None:
+        return None, f"No tree-sitter package found for {language_name}"
+    
+    try:
+        import tree_sitter
+        parser = tree_sitter.Parser(language)
+        return (parser, language, package_used), None
+    except Exception as e:
+        return None, f"Failed to create parser: {e}"

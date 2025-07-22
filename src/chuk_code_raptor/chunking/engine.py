@@ -1,10 +1,10 @@
-# src/chuk_code_raptor/chunking/engine.py
+# src/chuk_code_raptor/chunking/engine.py - Updated Version
 """
-Chunking Engine - Practical Edition
-===================================
+Chunking Engine - YAML Configuration Edition
+=============================================
 
-Main engine that uses the practical parser discovery system.
-Automatically adapts to available tree-sitter packages.
+Updated engine that uses the YAML-based parser registry for dynamic
+parser discovery and management. No more hard-coding!
 """
 
 from pathlib import Path
@@ -16,20 +16,22 @@ from chuk_code_raptor.core.models import FileInfo
 from .config import ChunkingConfig
 from .semantic_chunk import SemanticChunk, ContentType
 from .base import BaseParser, ParseContext, UnsupportedLanguageError
+from .parsers.registry import get_registry
 
 logger = logging.getLogger(__name__)
 
 class ChunkingEngine:
-    """Main engine for chunking operations using practical parser discovery"""
+    """Main engine for chunking operations using YAML-based parser registry"""
     
     def __init__(self, config: ChunkingConfig = None):
         """
-        Initialize chunking engine with automatic parser discovery.
+        Initialize chunking engine with YAML-based parser discovery.
         
         Args:
             config: ChunkingConfig to use (creates default if None)
         """
         self.config = config or ChunkingConfig()
+        self.registry = get_registry()
         self.parsers: Dict[str, BaseParser] = {}
         
         # Statistics
@@ -42,67 +44,50 @@ class ChunkingEngine:
             'errors': []
         }
         
-        # Discover and register parsers
+        # Discover and register parsers using YAML config
         self._discover_and_register_parsers()
         
         total_parsers = len(self.parsers)
-        logger.info(f"ChunkingEngine initialized with {total_parsers} parsers")
+        logger.info(f"ChunkingEngine initialized with {total_parsers} parsers (YAML-configured)")
     
     def _discover_and_register_parsers(self):
-        """Discover and register available parsers using the working discovery system"""
+        """Discover and register available parsers using YAML registry"""
         try:
-            from .parsers.available_parsers import discover_available_parsers
-            
-            # Get available parsers from the working discovery system
-            available_parsers = discover_available_parsers(self.config)
+            # Get available parsers from registry
+            available_parsers = self.registry.discover_available_parsers(self.config)
             
             if available_parsers:
-                # Register working parsers directly - they're already mapped by language
                 self.parsers = available_parsers.copy()
+                logger.info(f"✅ Registered {len(available_parsers)} parsers from YAML config")
                 
-                logger.info(f"✅ Registered {len(available_parsers)} working parsers")
+                # Show registry statistics
+                stats = self.registry.get_parser_stats()
+                logger.info(f"   📊 Total configured: {stats['total_parsers']}")
+                logger.info(f"   ✅ Available: {stats['available_parsers']}")
+                logger.info(f"   ❌ Unavailable: {stats['unavailable_parsers']}")
+                logger.info(f"   🌍 Languages: {stats['supported_languages']}")
+                logger.info(f"   📄 Extensions: {stats['supported_extensions']}")
                 
-                # Show what packages are being used
-                package_usage = {}
-                seen_parsers = set()
+                # Show package status
+                if stats['comprehensive_packages'] > 0:
+                    logger.info(f"   📦 Using comprehensive tree-sitter packages")
+                elif stats['individual_packages'] > 0:
+                    logger.info(f"   📦 Using {stats['individual_packages']} individual packages")
+                else:
+                    logger.warning("   ⚠️  No tree-sitter packages found")
                 
-                for lang, parser in available_parsers.items():
-                    parser_id = id(parser)
-                    if parser_id not in seen_parsers:
-                        # Check both TreeSitterParser and AvailableTreeSitterParser patterns
-                        if hasattr(parser, '_package_used'):
-                            package = parser._package_used
-                        else:
-                            # Infer from language name for TreeSitterParser
-                            package = f"tree_sitter_{lang}"
-                        
-                        if package not in package_usage:
-                            package_usage[package] = []
-                        
-                        # Get all languages this parser supports
-                        parser_languages = list(getattr(parser, 'supported_languages', [lang]))
-                        package_usage[package].extend(parser_languages)
-                        seen_parsers.add(parser_id)
-                
-                for package, languages in package_usage.items():
-                    unique_langs = list(set(languages))
-                    logger.info(f"   📦 {package}: {', '.join(unique_langs[:5])}")
             else:
-                logger.warning("⚠️  No parsers could be registered")
+                logger.warning("⚠️  No parsers could be registered from YAML config")
                 self._show_installation_help()
                 
-        except ImportError as e:
-            logger.error(f"❌ Parser discovery not available: {e}")
-            self._show_installation_help()
         except Exception as e:
-            logger.error(f"❌ Parser discovery failed: {e}")
+            logger.error(f"❌ Failed to load parsers from YAML config: {e}")
             self._show_installation_help()
     
     def _show_installation_help(self):
         """Show installation help when no parsers are available"""
         try:
-            from .parsers.available_parsers import get_installation_help
-            help_text = get_installation_help()
+            help_text = self.registry.get_installation_help()
             logger.info("💡 Installation help:")
             for line in help_text.split('\n'):
                 if line.strip():
@@ -140,7 +125,7 @@ class ChunkingEngine:
         if not content.strip():
             return []
         
-        parser = self._get_parser(language)
+        parser = self._get_parser(language, file_path)
         if not parser:
             # Provide helpful error message
             error_msg = self._build_helpful_error_message(language)
@@ -176,6 +161,91 @@ class ChunkingEngine:
             logger.error(f"❌ {error}")
             raise
     
+    def _get_parser(self, language: str, file_path: str = None) -> Optional[BaseParser]:
+        """Get parser for language using YAML registry"""
+        
+        # Try direct language lookup
+        parser = self.parsers.get(language)
+        if parser:
+            return parser
+        
+        # Try language alias lookup
+        parser_name = self.registry.get_parser_for_language(language)
+        if parser_name and parser_name in self.parsers:
+            # Map the language to the actual parser for future lookups
+            actual_parser = None
+            for lang, p in self.parsers.items():
+                if hasattr(p, '_config_name') and p._config_name == parser_name:
+                    actual_parser = p
+                    break
+            if actual_parser:
+                self.parsers[language] = actual_parser
+                return actual_parser
+        
+        # Try extension-based lookup
+        if file_path:
+            file_ext = Path(file_path).suffix.lower()
+            parser_name = self.registry.get_parser_for_extension(file_ext)
+            if parser_name:
+                # Find parser instance by config name
+                for lang, parser in self.parsers.items():
+                    if hasattr(parser, '_config_name') and parser._config_name == parser_name:
+                        # Cache this mapping
+                        self.parsers[language] = parser
+                        return parser
+        
+        return None
+    
+    def _detect_language(self, file_path: Path) -> str:
+        """Pure YAML-based language detection"""
+        extension = file_path.suffix.lower()
+        
+        # Use registry for extension mapping
+        parser_name = self.registry.get_parser_for_extension(extension)
+        if parser_name:
+            parser_config = self.registry.get_parser_config(parser_name)
+            if parser_config and parser_config.languages:
+                detected = parser_config.languages[0]  # Use primary language
+                logger.debug(f"🔍 Detected language '{detected}' for extension '{extension}' via YAML config")
+                return detected
+        
+        # No hard-coded fallbacks - use 'unknown' and let registry handle it
+        logger.debug(f"🔍 No YAML mapping for extension '{extension}', using 'unknown'")
+        return 'unknown'
+    
+    def _detect_content_type(self, file_path: str, language: str) -> ContentType:
+        """Pure YAML-based content type detection"""
+        # Get parser config for this language
+        parser_name = self.registry.get_parser_for_language(language)
+        if parser_name:
+            parser_config = self.registry.get_parser_config(parser_name)
+            if parser_config:
+                # Use parser-specific config or infer from language name
+                primary_lang = parser_config.languages[0] if parser_config.languages else language
+                
+                # YAML-configurable content type mapping
+                content_type_map = {
+                    'markdown': ContentType.MARKDOWN,
+                    'html': ContentType.HTML,
+                    'xml': ContentType.XML,
+                    'json': ContentType.JSON,
+                    'yaml': ContentType.YAML,
+                    'css': ContentType.CSS,
+                    'python': ContentType.CODE,
+                    'javascript': ContentType.CODE,
+                    'typescript': ContentType.CODE,
+                    'rust': ContentType.CODE,
+                    'go': ContentType.CODE,
+                    'java': ContentType.CODE,
+                    'cpp': ContentType.CODE,
+                    'c': ContentType.CODE,
+                }
+                
+                return content_type_map.get(primary_lang, ContentType.PLAINTEXT)
+        
+        # Pure fallback to plaintext - no hard-coded mappings
+        return ContentType.PLAINTEXT
+    
     def _build_helpful_error_message(self, language: str) -> str:
         """Build a helpful error message for unsupported languages"""
         available_langs = sorted(self.get_supported_languages())
@@ -183,103 +253,19 @@ class ChunkingEngine:
         
         if not available_langs:
             error_msg += "\n💡 No parsers available. Install tree-sitter packages:"
-            error_msg += "\n   pip install tree-sitter-python tree-sitter-javascript"
-            error_msg += "\n   pip install tree-sitter-html tree-sitter-css tree-sitter-json"
+            error_msg += "\n   pip install tree-sitter-languages"
         else:
             # Show similar languages
-            similar = [lang for lang in available_langs if language.lower() in lang.lower() or lang.lower() in language.lower()]
+            similar = [lang for lang in available_langs 
+                      if language.lower() in lang.lower() or lang.lower() in language.lower()]
             if similar:
                 error_msg += f"\n💡 Did you mean: {', '.join(similar)}"
             
             error_msg += f"\n💡 Available languages: {', '.join(available_langs[:10])}"
             if len(available_langs) > 10:
                 error_msg += f" (and {len(available_langs) - 10} more)"
-            
-            # Check if this might be a missing package issue
-            if language in ['latex', 'tex'] and language not in available_langs:
-                error_msg += f"\n💡 LaTeX requires: pip install tree-sitter-latex"
-            elif language in ['typescript'] and language not in available_langs:
-                error_msg += f"\n💡 TypeScript requires: pip install tree-sitter-typescript"
         
         return error_msg
-    
-    def _get_parser(self, language: str) -> Optional[BaseParser]:
-        """Get parser for language with enhanced discovery"""
-        parser = self.parsers.get(language)
-        if parser:
-            return parser
-        
-        # Try alternative language names
-        language_aliases = {
-            'tex': 'latex',
-            'js': 'javascript',
-            'ts': 'typescript',
-            'py': 'python',
-            'md': 'markdown',
-            'yml': 'yaml',
-        }
-        
-        alias = language_aliases.get(language)
-        if alias and alias in self.parsers:
-            return self.parsers[alias]
-        
-        return None
-    
-    def _detect_language(self, file_path: Path) -> str:
-        """Enhanced language detection"""
-        extension = file_path.suffix.lower()
-        
-        # Enhanced extension mapping
-        extension_map = {
-            '.py': 'python', '.pyx': 'python', '.pyi': 'python',
-            '.js': 'javascript', '.jsx': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
-            '.ts': 'typescript', '.tsx': 'typescript',
-            '.md': 'markdown', '.markdown': 'markdown', '.mdown': 'markdown', '.mkd': 'markdown',
-            '.html': 'html', '.htm': 'html',
-            '.css': 'css', '.scss': 'css', '.sass': 'css', '.less': 'css',
-            '.json': 'json',
-            '.yaml': 'yaml', '.yml': 'yaml',
-            '.tex': 'latex', '.latex': 'latex', '.ltx': 'latex',
-            '.rs': 'rust',
-            '.go': 'go',
-            '.java': 'java',
-            '.cpp': 'cpp', '.cxx': 'cpp', '.cc': 'cpp',
-            '.c': 'c',
-            '.h': 'c', '.hpp': 'cpp',
-            '.php': 'php',
-            '.rb': 'ruby',
-            '.sh': 'bash', '.bash': 'bash',
-            '.lua': 'lua',
-            '.vim': 'vim',
-            '.sql': 'sql',
-            '.xml': 'xml',
-            '.toml': 'toml',
-        }
-        
-        detected = extension_map.get(extension, 'text')
-        logger.debug(f"🔍 Detected language '{detected}' for extension '{extension}'")
-        return detected
-    
-    def _detect_content_type(self, file_path: str, language: str) -> ContentType:
-        """Enhanced content type detection"""
-        extension = Path(file_path).suffix.lower()
-        
-        if extension in {'.md', '.markdown', '.mdown', '.mkd'}:
-            return ContentType.MARKDOWN
-        elif extension in {'.html', '.htm'}:
-            return ContentType.HTML
-        elif extension == '.json':
-            return ContentType.JSON
-        elif extension in {'.yaml', '.yml'}:
-            return ContentType.YAML
-        elif extension in {'.xml'}:
-            return ContentType.XML
-        elif language in {'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'cpp', 'c'}:
-            return ContentType.CODE
-        elif extension in {'.css', '.scss', '.sass', '.less'}:
-            return ContentType.CSS
-        else:
-            return ContentType.PLAINTEXT
     
     def _update_stats(self, parser: BaseParser, chunks: List[SemanticChunk], processing_time: float):
         """Update internal statistics"""
@@ -288,19 +274,8 @@ class ChunkingEngine:
         
         # Track parser usage
         parser_name = getattr(parser, 'name', parser.__class__.__name__)
-        parser_type = getattr(parser, 'parser_type', 'tree_sitter')
-        
-        # Get package info for both parser types
-        if hasattr(parser, '_package_used'):
-            package_used = parser._package_used
-        else:
-            # Infer from supported languages for TreeSitterParser
-            languages = getattr(parser, 'supported_languages', set())
-            if languages:
-                first_lang = next(iter(languages))
-                package_used = f"tree_sitter_{first_lang}"
-            else:
-                package_used = 'unknown'
+        parser_type = getattr(parser, 'parser_type', 'unknown')
+        config_name = getattr(parser, '_config_name', parser_name)
         
         parser_key = f"{parser_name} ({parser_type})"
         
@@ -310,7 +285,7 @@ class ChunkingEngine:
                 'chunks_created': 0,
                 'total_time': 0.0,
                 'parser_type': parser_type,
-                'package_used': package_used
+                'config_name': config_name
             }
         
         self.stats['chunker_usage'][parser_key]['files_processed'] += 1
@@ -335,23 +310,16 @@ class ChunkingEngine:
         )
     
     def get_supported_languages(self) -> List[str]:
-        """Get list of all supported languages"""
-        return sorted(list(self.parsers.keys()))
+        """Get list of all supported languages from YAML config"""
+        return self.registry.get_supported_languages()
     
     def get_supported_extensions(self) -> List[str]:
-        """Get list of all supported file extensions"""
-        extensions = set()
-        seen_parsers = set()
-        for parser in self.parsers.values():
-            parser_id = id(parser)
-            if parser_id not in seen_parsers:
-                extensions.update(getattr(parser, 'supported_extensions', set()))
-                seen_parsers.add(parser_id)
-        return sorted(list(extensions))
+        """Get list of all supported file extensions from YAML config"""
+        return self.registry.get_supported_extensions()
     
     def can_chunk_language(self, language: str) -> bool:
         """Check if the engine can chunk the given language"""
-        return language in self.parsers
+        return language in self.parsers or self.registry.get_parser_for_language(language) is not None
     
     def can_chunk_file(self, file_path: str) -> bool:
         """Check if the engine can chunk the given file"""
@@ -361,46 +329,22 @@ class ChunkingEngine:
     
     def get_chunker_for_language(self, language: str, file_extension: str = None):
         """Get the parser that would be used for a language/extension"""
-        return self._get_parser(language)
+        return self._get_parser(language, f"test{file_extension}" if file_extension else None)
     
     def get_statistics(self) -> Dict[str, Any]:
         """Get chunking statistics"""
         stats = self.stats.copy()
         
-        # Add parser information
-        unique_parsers = set(self.parsers.values())
-        stats['available_chunkers'] = len(unique_parsers)
-        stats['supported_languages'] = len(self.get_supported_languages())
-        stats['supported_extensions'] = len(self.get_supported_extensions())
-        
-        # Parser type breakdown
-        parser_types = {}
-        package_usage = {}
-        seen_parsers = set()
-        
-        for parser in unique_parsers:
-            parser_id = id(parser)
-            if parser_id not in seen_parsers:
-                parser_type = getattr(parser, 'parser_type', 'tree_sitter')
-                
-                # Get package info for both parser types
-                if hasattr(parser, '_package_used'):
-                    package_used = parser._package_used
-                else:
-                    # Infer from supported languages for TreeSitterParser
-                    languages = getattr(parser, 'supported_languages', set())
-                    if languages:
-                        first_lang = next(iter(languages))
-                        package_used = f"tree_sitter_{first_lang}"
-                    else:
-                        package_used = 'unknown'
-                
-                parser_types[parser_type] = parser_types.get(parser_type, 0) + 1
-                package_usage[package_used] = package_usage.get(package_used, 0) + 1
-                seen_parsers.add(parser_id)
-        
-        stats['parser_types'] = parser_types
-        stats['package_usage'] = package_usage
+        # Add registry information
+        registry_stats = self.registry.get_parser_stats()
+        stats.update({
+            'available_chunkers': len(self.parsers),
+            'configured_parsers': registry_stats['total_parsers'],
+            'supported_languages': len(self.get_supported_languages()),
+            'supported_extensions': len(self.get_supported_extensions()),
+            'parser_types': registry_stats['parser_types'],
+            'package_availability': registry_stats['package_availability']
+        })
         
         # Calculate averages
         if stats['files_chunked'] > 0:
@@ -423,25 +367,38 @@ class ChunkingEngine:
             'errors': []
         }
     
+    def reload_parsers(self):
+        """Reload parsers from YAML configuration"""
+        logger.info("Reloading parsers from YAML configuration...")
+        self.parsers.clear()
+        self.registry.reload_config()
+        self._discover_and_register_parsers()
+        logger.info("Parser reload complete")
+    
     def print_status(self):
         """Print engine status information"""
         stats = self.get_statistics()
         
-        print("🚀 ChunkingEngine Status")
-        print("=" * 40)
+        print("🚀 ChunkingEngine Status (YAML-Configured)")
+        print("=" * 50)
+        print(f"Configured parsers: {stats['configured_parsers']}")
+        print(f"Available parsers: {stats['available_chunkers']}")
         print(f"Supported languages: {stats['supported_languages']}")
         print(f"Supported extensions: {stats['supported_extensions']}")
-        print(f"Available parsers: {stats['available_chunkers']}")
         
         if stats['parser_types']:
             print(f"\nParser types:")
             for parser_type, count in stats['parser_types'].items():
                 print(f"  {parser_type}: {count}")
         
-        if stats['package_usage']:
-            print(f"\nPackages used:")
-            for package, count in stats['package_usage'].items():
-                print(f"  {package}: {count} parsers")
+        package_info = stats['package_availability']
+        if package_info.get('comprehensive'):
+            print(f"\nComprehensive packages: {len(package_info['comprehensive'])}")
+            for pkg in package_info['comprehensive']:
+                print(f"  ✓ {pkg}")
+        
+        if package_info.get('individual'):
+            print(f"\nIndividual packages: {len(package_info['individual'])}")
         
         if stats['files_chunked'] > 0:
             print(f"\nProcessing stats:")
@@ -449,3 +406,45 @@ class ChunkingEngine:
             print(f"  Chunks created: {stats['chunks_created']}")
             print(f"  Avg chunks/file: {stats['avg_chunks_per_file']:.1f}")
             print(f"  Avg time/file: {stats['avg_processing_time']*1000:.1f}ms")
+        
+        print(f"\n💡 Configuration file: {self.registry.config_path}")
+    
+    def add_custom_parser(self, name: str, parser_class, languages: List[str], 
+                         extensions: List[str], description: str = "Custom parser"):
+        """
+        Add a custom parser at runtime
+        
+        Args:
+            name: Parser name
+            parser_class: Parser class
+            languages: Supported languages
+            extensions: Supported file extensions
+            description: Parser description
+        """
+        try:
+            # Create parser instance
+            parser = parser_class(self.config)
+            
+            # Set metadata
+            parser.supported_languages = set(languages)
+            parser.supported_extensions = set(extensions)
+            parser.name = name
+            parser._config_name = name
+            
+            # Register with engine
+            for language in languages:
+                self.parsers[language] = parser
+            
+            # Register with registry for future lookups
+            self.registry.add_parser_runtime(name, parser, languages, extensions)
+            
+            logger.info(f"✅ Added custom parser '{name}' for languages: {', '.join(languages)}")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to add custom parser '{name}': {e}")
+            raise
+
+# Convenience function for backward compatibility
+def create_engine(config: ChunkingConfig = None) -> ChunkingEngine:
+    """Create a ChunkingEngine with YAML-based configuration"""
+    return ChunkingEngine(config)

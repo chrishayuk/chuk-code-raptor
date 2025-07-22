@@ -1,0 +1,174 @@
+# src/chuk_code_raptor/chunking/parsers/config.yaml
+parsers:
+  # Dedicated tree-sitter parsers with full implementations
+  python:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.python
+    class: PythonParser
+    languages: [python, py]
+    extensions: [.py, .pyx, .pyi, .pyw]
+    description: Enhanced Python parser with quality assessment and import analysis
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-python]
+    fallback: text
+    
+  javascript:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.javascript
+    class: JavaScriptParser
+    languages: [javascript, js, typescript, ts]
+    extensions: [.js, .jsx, .ts, .tsx, .mjs, .cjs]
+    description: JavaScript/TypeScript parser with framework-specific pattern detection
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-javascript]
+    fallback: text
+    
+  html:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.html
+    class: HTMLParser
+    languages: [html]
+    extensions: [.html, .htm, .xhtml]
+    description: HTML parser with enhanced semantic element processing
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-html]
+    fallback: text
+    
+  css:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.css
+    class: CSSParser
+    languages: [css]
+    extensions: [.css, .scss, .sass, .less]
+    description: CSS parser with semantic rule processing
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-css]
+    fallback: text
+    
+  markdown:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.markdown
+    class: MarkdownParser
+    languages: [markdown, md]
+    extensions: [.md, .markdown, .mdown, .mkd]
+    description: Enhanced Markdown parser with tree-sitter and manual semantic fallback
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-markdown]
+    fallback: text
+    
+  json:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.json
+    class: JSONParser
+    languages: [json]
+    extensions: [.json, .jsonl, .ndjson]
+    description: JSON parser using tree-sitter-json for AST-based chunking
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-json]
+    fallback: text
+    
+  xml:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.xml
+    class: XMLParser
+    languages: [xml]
+    extensions: [.xml, .xhtml, .svg, .rss, .atom, .sitemap, .xsd, .wsdl, .pom]
+    description: XML parser with tree-sitter and heuristic fallback
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-xml]
+    fallback: text
+    
+  rust:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.rust
+    class: RustParser
+    languages: [rust, rs]
+    extensions: [.rs]
+    description: Rust parser with tree-sitter support
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-rust]
+    fallback: text
+    
+  latex:
+    type: heuristic
+    module: chuk_code_raptor.chunking.parsers.latex
+    class: HeuristicLaTeXParser
+    languages: [latex, tex]
+    extensions: [.tex, .latex, .ltx, .sty, .cls, .bib]
+    description: Enhanced heuristic LaTeX parser with comprehensive semantic understanding
+    package_priority: []
+    fallback: text
+    
+  # Generic text parser for unknown file types
+  text:
+    type: heuristic
+    module: chuk_code_raptor.chunking.parsers.text
+    class: TextParser
+    languages: [text, plaintext, unknown]
+    extensions: [.txt, .log, .cfg, .ini, .conf, .properties, .env]
+    description: Generic text parser for unstructured content
+    package_priority: []
+    fallback: null
+
+# Language alias mappings (for backward compatibility and convenience)
+language_aliases:
+  py: python
+  js: javascript
+  ts: typescript
+  tex: latex
+  md: markdown
+  rs: rust
+  txt: text
+  log: text
+  cfg: text
+  ini: text
+  conf: text
+  unknown: text
+
+# Default parser settings
+defaults:
+  tree_sitter_timeout: 30  # seconds
+  fallback_enabled: true
+  enable_heuristic_fallback: true
+  min_chunk_size: 50
+  max_chunk_size: 2000
+  target_chunk_size: 800
+
+# Package installation recommendations
+package_recommendations:
+  comprehensive:
+    - name: tree-sitter-languages
+      description: "Comprehensive tree-sitter language support (recommended)"
+      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "yaml", "rust", "go", "java", "cpp", "c"]
+    - name: tree-sitter-language-pack
+      description: "Alternative comprehensive package"
+      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "latex", "yaml"]
+  
+  individual:
+    python: tree-sitter-python
+    javascript: tree-sitter-javascript
+    typescript: tree-sitter-typescript
+    html: tree-sitter-html
+    css: tree-sitter-css
+    json: tree-sitter-json
+    xml: tree-sitter-xml
+    yaml: tree-sitter-yaml
+    rust: tree-sitter-rust
+    go: tree-sitter-go
+    java: tree-sitter-java
+    cpp: tree-sitter-cpp
+    c: tree-sitter-c
+
+# Parser-specific configurations
+parser_configs:
+  latex:
+    parsing_strategy: balanced  # fine, balanced, coarse
+    environment_extraction_mode: comprehensive
+    math_detection_level: aggressive
+    preserve_all_environments: true
+    subsection_granularity: true
+    enhanced_math_detection: true
+    
+  xml:
+    preserve_atomic_elements: true
+    group_similar_elements: true
+    extract_cdata: true
+    namespace_aware: true
+    
+  markdown:
+    section_chunking: true
+    code_block_extraction: true
+    table_extraction: true
+    list_extraction: true
