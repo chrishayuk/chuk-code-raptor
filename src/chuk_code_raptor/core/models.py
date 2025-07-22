@@ -37,6 +37,7 @@ class ChunkType(Enum):
     IMPORT = "import"
     VARIABLE = "variable"
     SUMMARY = "summary"        # RAPTOR summaries
+    METADATA = "metadata"
 
 class ProcessingStatus(Enum):
     """Status of file processing"""

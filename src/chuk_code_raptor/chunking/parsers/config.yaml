@@ -66,10 +66,21 @@ parsers:
     module: chuk_code_raptor.chunking.parsers.xml
     class: XMLParser
     languages: [xml]
-    extensions: [.xml, .xhtml, .svg, .rss, .atom, .sitemap, .xsd, .wsdl, .pom]
+    extensions: [.xml, .xhtml, .svg, .sitemap, .xsd, .wsdl, .pom]
     description: XML parser with tree-sitter and heuristic fallback
     package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-xml]
     fallback: text
+    
+  # RSS/Atom Feed Parser (specialized for web browsing)
+  rss_atom:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.rss_atom
+    class: RSSAtomParser
+    languages: [rss, atom, feed, syndication]
+    extensions: [.rss, .atom, .xml, .feed]
+    description: Comprehensive RSS/Atom feed parser with semantic content extraction optimized for web browsing
+    package_priority: [tree-sitter-xml, tree-sitter-languages, tree-sitter-language-pack]
+    fallback: xml
     
   rust:
     type: tree_sitter_dedicated
@@ -110,6 +121,12 @@ language_aliases:
   tex: latex
   md: markdown
   rs: rust
+  # RSS/Atom aliases
+  rss: rss_atom
+  atom: rss_atom
+  feed: rss_atom
+  syndication: rss_atom
+  # Other aliases
   txt: text
   log: text
   cfg: text
@@ -153,6 +170,37 @@ package_recommendations:
 
 # Parser-specific configurations
 parser_configs:
+  # RSS/Atom parser configuration
+  rss_atom:
+    # Content extraction preferences
+    extract_full_content: true
+    prefer_content_encoded: true
+    clean_html_content: true
+    extract_media_metadata: true
+    
+    # Entry processing
+    max_entries_per_feed: 100
+    min_entry_content_length: 50
+    extract_categories: true
+    parse_dates: true
+    
+    # Semantic analysis
+    detect_entry_types: true
+    calculate_freshness_scores: true
+    analyze_content_quality: true
+    extract_topics: true
+    
+    # Feed metadata extraction
+    extract_feed_image: true
+    parse_dublin_core: true
+    extract_itunes_metadata: true  # For podcast feeds
+    extract_media_rss: true
+    
+    # Content chunking
+    chunk_by_entry: true
+    include_feed_metadata: true
+    merge_short_entries: false
+    
   latex:
     parsing_strategy: balanced  # fine, balanced, coarse
     environment_extraction_mode: comprehensive

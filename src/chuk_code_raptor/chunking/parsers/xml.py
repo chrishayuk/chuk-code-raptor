@@ -11,6 +11,7 @@ import logging
 import re
 from typing import List, Dict, Optional, Set, Tuple
 from xml.sax.saxutils import escape, unescape
+from collections import defaultdict
 
 from ..tree_sitter_base import TreeSitterParser
 from ..heuristic_base import HeuristicParser
@@ -85,13 +86,48 @@ class XMLParser(TreeSitterParser):
                 file_extension in self.supported_extensions)
     
     def _get_tree_sitter_language(self):
-        """Get XML tree-sitter language"""
-        try:
-            import tree_sitter
-            import tree_sitter_xml
-            return tree_sitter.Language(tree_sitter_xml.language())
-        except ImportError as e:
-            raise ImportError("tree-sitter-xml not installed. Install with: pip install tree-sitter-xml") from e
+        """Get XML tree-sitter language with robust package handling"""
+        from ..tree_sitter_base import get_tree_sitter_language_robust
+        
+        # Try different package sources for XML with improved compatibility
+        language, package_used = get_tree_sitter_language_robust(
+            'xml', 
+            ['tree_sitter_languages', 'tree_sitter_language_pack', 'tree_sitter_xml']
+        )
+        
+        if language is None:
+            # Try direct import with different API patterns
+            try:
+                import tree_sitter_xml
+                
+                # Try different ways to get the language
+                if hasattr(tree_sitter_xml, 'language'):
+                    # New API style
+                    language = tree_sitter_xml.language()
+                    package_used = 'tree_sitter_xml'
+                elif hasattr(tree_sitter_xml, 'LANGUAGE'):
+                    # Some packages use LANGUAGE constant
+                    import tree_sitter
+                    language = tree_sitter.Language(tree_sitter_xml.LANGUAGE)
+                    package_used = 'tree_sitter_xml'
+                else:
+                    # Try to find language function/constant
+                    for attr_name in dir(tree_sitter_xml):
+                        if 'language' in attr_name.lower() and callable(getattr(tree_sitter_xml, attr_name)):
+                            language = getattr(tree_sitter_xml, attr_name)()
+                            package_used = 'tree_sitter_xml'
+                            break
+            except ImportError:
+                pass
+        
+        if language is None:
+            raise ImportError(
+                "No compatible tree-sitter XML package found. "
+                "Try: pip install tree-sitter-languages or pip install tree-sitter-xml"
+            )
+        
+        self._package_used = package_used
+        return language
     
     def _get_chunk_node_types(self) -> Dict[str, ChunkType]:
         """XML AST node types to chunk types mapping"""
@@ -108,31 +144,71 @@ class XMLParser(TreeSitterParser):
     
     def parse(self, content: str, context: ParseContext) -> List[SemanticChunk]:
         """Enhanced parse method with automatic fallback to heuristic parsing"""
+        if not content.strip():
+            return []
         
-        # First try tree-sitter parsing
+        # First attempt: tree-sitter parsing with enhanced error handling
         tree_sitter_chunks = []
+        tree_sitter_error = None
+        
         try:
-            tree_sitter_chunks = super().parse(content, context)
-            logger.debug(f"Tree-sitter XML produced {len(tree_sitter_chunks)} chunks")
+            if self.parser is not None and self.language is not None:
+                tree_sitter_chunks = self._parse_with_tree_sitter(content, context)
+                logger.debug(f"Tree-sitter XML produced {len(tree_sitter_chunks)} chunks")
         except Exception as e:
+            tree_sitter_error = str(e)
             logger.warning(f"Tree-sitter XML parsing failed: {e}")
         
-        # Check if tree-sitter parsing was successful
+        # Check if tree-sitter parsing was sufficient
         if self._is_parsing_successful(tree_sitter_chunks, content):
-            logger.info(f"Using tree-sitter results: {len(tree_sitter_chunks)} chunks")
-            return self._post_process(tree_sitter_chunks)
+            logger.info(f"Using tree-sitter results for XML parsing: {len(tree_sitter_chunks)} chunks")
+            try:
+                return self._post_process(tree_sitter_chunks)
+            except Exception as e:
+                logger.warning(f"Tree-sitter post-processing failed: {e}, falling back to heuristic")
         
-        # Fall back to heuristic parsing
-        logger.info("Tree-sitter parsing insufficient, using heuristic XML analysis")
-        heuristic_chunks = self._parse_xml_heuristically(content, context)
-        
-        if heuristic_chunks and len(heuristic_chunks) > len(tree_sitter_chunks):
-            logger.info(f"Heuristic XML analysis produced {len(heuristic_chunks)} chunks")
-            return self._post_process(heuristic_chunks)
+        # Fallback: heuristic XML parsing
+        logger.info("Tree-sitter insufficient for XML, using heuristic XML analysis")
+        try:
+            heuristic_chunks = self._parse_xml_heuristically(content, context)
+            
+            if heuristic_chunks and len(heuristic_chunks) > len(tree_sitter_chunks):
+                logger.info(f"Heuristic XML analysis produced {len(heuristic_chunks)} chunks")
+                return self._post_process(heuristic_chunks)
+        except Exception as e:
+            logger.error(f"Heuristic XML parsing also failed: {e}")
+            
+            # Create a basic fallback chunk
+            if content.strip():
+                chunk_id = create_chunk_id(context.file_path, 1, ChunkType.TEXT_BLOCK, "xml_fallback")
+                
+                fallback_chunk = SemanticChunk(
+                    id=chunk_id,
+                    file_path=context.file_path,
+                    content=content,
+                    start_line=1,
+                    end_line=content.count('\n') + 1,
+                    content_type=context.content_type,
+                    chunk_type=ChunkType.TEXT_BLOCK,
+                    language=context.language,
+                    importance_score=0.5,
+                    metadata={
+                        'parser': self.name,
+                        'parser_type': 'xml_fallback',
+                        'extraction_method': 'fallback',
+                        'tree_sitter_error': tree_sitter_error,
+                        'heuristic_error': str(e)
+                    }
+                )
+                
+                fallback_chunk.add_tag('xml_fallback', source='error_recovery')
+                fallback_chunk.add_tag('parsing_error', source='error_recovery')
+                
+                return [fallback_chunk]
         
         # Final fallback: return tree-sitter result even if poor
-        logger.warning("Heuristic analysis didn't improve results, using tree-sitter fallback")
-        return self._post_process(tree_sitter_chunks)
+        logger.warning("All parsing methods had issues, using best available result")
+        return self._post_process(tree_sitter_chunks) if tree_sitter_chunks else []
     
     def _is_parsing_successful(self, chunks: List[SemanticChunk], content: str) -> bool:
         """Determine if tree-sitter parsing was successful"""
@@ -486,6 +562,99 @@ class XMLParser(TreeSitterParser):
                     processed_ranges.add((start_line, end_line))
         
         return chunks
+    
+    def _group_similar_elements_into_chunks(self, element_chunks: List[SemanticChunk], 
+                                          context: ParseContext) -> List[SemanticChunk]:
+        """Group similar elements into consolidated chunks"""
+        if not element_chunks:
+            return []
+        
+        # Group chunks by element name
+        grouped_by_element = defaultdict(list)
+        for chunk in element_chunks:
+            element_name = chunk.metadata.get('element_name', 'unknown')
+            grouped_by_element[element_name].append(chunk)
+        
+        consolidated_chunks = []
+        
+        for element_name, chunks in grouped_by_element.items():
+            if len(chunks) <= 2:
+                # Don't group if there are only 1-2 instances
+                consolidated_chunks.extend(chunks)
+                continue
+            
+            # Calculate group size based on target chunk size
+            group_size = max(2, min(5, self.config.target_chunk_size // 200))
+            
+            # Group chunks into batches
+            for i in range(0, len(chunks), group_size):
+                batch = chunks[i:i + group_size]
+                
+                if len(batch) == 1:
+                    consolidated_chunks.append(batch[0])
+                    continue
+                
+                # Merge batch into a single chunk
+                merged_content = []
+                merged_metadata = {
+                    'parser': self.name,
+                    'parser_type': 'xml_heuristic',
+                    'element_name': element_name,
+                    'xml_type': 'grouped_elements',
+                    'semantic_category': batch[0].metadata.get('semantic_category', 'custom'),
+                    'extraction_method': 'heuristic',
+                    'grouped_count': len(batch),
+                    'grouped_elements': [c.metadata.get('element_name') for c in batch]
+                }
+                
+                total_importance = 0
+                start_line = min(c.start_line for c in batch)
+                end_line = max(c.end_line for c in batch)
+                
+                for chunk in batch:
+                    merged_content.append(chunk.content)
+                    total_importance += chunk.importance_score
+                
+                # Create consolidated chunk
+                merged_chunk_content = '\n\n'.join(merged_content)
+                
+                chunk_id = create_chunk_id(
+                    context.file_path,
+                    start_line,
+                    ChunkType.TEXT_BLOCK,
+                    f"grouped_{element_name}_{start_line}"
+                )
+                
+                merged_chunk = SemanticChunk(
+                    id=chunk_id,
+                    file_path=context.file_path,
+                    content=merged_chunk_content,
+                    start_line=start_line,
+                    end_line=end_line,
+                    content_type=context.content_type,
+                    chunk_type=ChunkType.TEXT_BLOCK,
+                    language=context.language,
+                    importance_score=total_importance / len(batch),
+                    metadata=merged_metadata
+                )
+                
+                # Merge semantic tags from all chunks
+                all_tags = set()
+                for chunk in batch:
+                    if hasattr(chunk, 'semantic_tags') and chunk.semantic_tags:
+                        for tag in chunk.semantic_tags:
+                            all_tags.add(tag.name)
+                
+                # Add consolidated tags
+                for tag_name in all_tags:
+                    merged_chunk.add_tag(tag_name, source='heuristic_group')
+                
+                merged_chunk.add_tag('grouped_elements', source='heuristic')
+                merged_chunk.add_tag(f'grouped_{element_name}', source='heuristic')
+                
+                consolidated_chunks.append(merged_chunk)
+        
+        return consolidated_chunks
     
     def _extract_content_elements(self, content: str, context: ParseContext, 
                                 processed_ranges: Set[Tuple[int, int]]) -> List[SemanticChunk]:
