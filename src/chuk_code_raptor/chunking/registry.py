@@ -1,4 +1,4 @@
-# src/chuk_code_raptor/chunking/parsers/registry.py
+# src/chuk_code_raptor/chunking/registry.py
 """
 Dynamic Parser Registry System
 ==============================
@@ -268,7 +268,7 @@ class ParserRegistry:
                 parser_class = getattr(module, parser_config.class_name)
                 
                 # Try to create a test instance to verify dependencies
-                from ..config import ChunkingConfig
+                from .config import ChunkingConfig
                 test_config = ChunkingConfig()
                 test_instance = parser_class(test_config)
                 
@@ -427,7 +427,7 @@ def reload_registry():
 # Convenience functions for backward compatibility
 def discover_available_parsers(config=None):
     """Discover available parsers using the registry"""
-    from ..config import ChunkingConfig
+    from .config import ChunkingConfig
     if config is None:
         config = ChunkingConfig()
     
@@ -475,7 +475,7 @@ def register_custom_parser(name: str, parser_class: Type, languages: List[str],
     registry = get_registry()
     
     # Create a runtime config
-    from ..config import ChunkingConfig
+    from .config import ChunkingConfig
     config = ChunkingConfig()
     
     # Create parser instance

@@ -1,4 +1,4 @@
-# src/chuk_code_raptor/chunking/parsers/config.yaml
+# src/chuk_code_raptor/chunking/config.yaml
 parsers:
   # Dedicated tree-sitter parsers with full implementations
   python:

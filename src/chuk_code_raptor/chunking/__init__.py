@@ -75,7 +75,7 @@ from .semantic_chunk import (
 )
 
 # Registry system (always available)
-from .parsers.registry import (
+from .registry import (
     ParserRegistry,
     get_registry,
     reload_registry,

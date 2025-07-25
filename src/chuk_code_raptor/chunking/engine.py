@@ -1,4 +1,4 @@
-# src/chuk_code_raptor/chunking/engine.py - Updated Version
+# src/chuk_code_raptor/chunking/engine.py
 """
 Chunking Engine - YAML Configuration Edition
 =============================================
@@ -16,7 +16,7 @@ from chuk_code_raptor.core.models import FileInfo
 from .config import ChunkingConfig
 from .semantic_chunk import SemanticChunk, ContentType
 from .base import BaseParser, ParseContext, UnsupportedLanguageError
-from .parsers.registry import get_registry
+from .registry import get_registry
 
 logger = logging.getLogger(__name__)
 

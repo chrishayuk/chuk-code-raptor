@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Import registry system for dynamic parser management
-from .registry import (
+from ..registry import (
     ParserRegistry,
     get_registry,
     reload_registry,
