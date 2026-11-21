@@ -71,14 +71,44 @@ parsers:
     package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-xml]
     fallback: text
     
-  # RSS/Atom Feed Parser (specialized for web browsing)
-  rss_atom:
+  # Feed parsers - dedicated implementations
+  feed:
     type: tree_sitter_dedicated
-    module: chuk_code_raptor.chunking.parsers.rss_atom
-    class: RSSAtomParser
-    languages: [rss, atom, feed, syndication]
-    extensions: [.rss, .atom, .xml, .feed]
-    description: Comprehensive RSS/Atom feed parser with semantic content extraction optimized for web browsing
+    module: chuk_code_raptor.chunking.parsers.feed
+    class: FeedParserCoordinator
+    languages: [rss, atom, feed, syndication, rss_atom]
+    extensions: [.rss, .atom, .xml, .feed, .rdf]
+    description: Feed parser coordinator that routes to specialized RSS/Atom/RDF parsers
+    package_priority: [tree-sitter-xml, tree-sitter-languages, tree-sitter-language-pack]
+    fallback: xml
+    
+  rss:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.rss
+    class: RSSParser
+    languages: [rss, rss2]
+    extensions: [.rss, .xml]
+    description: Dedicated RSS 2.0 parser with comprehensive feature support
+    package_priority: [tree-sitter-xml, tree-sitter-languages, tree-sitter-language-pack]
+    fallback: xml
+    
+  rdf:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.rdf
+    class: RDFParser
+    languages: [rss1, rdf]
+    extensions: [.rdf, .xml, .rss]
+    description: RSS 1.0 (RDF) parser with proper structural understanding
+    package_priority: [tree-sitter-xml, tree-sitter-languages, tree-sitter-language-pack]
+    fallback: xml
+    
+  atom:
+    type: tree_sitter_dedicated
+    module: chuk_code_raptor.chunking.parsers.atom
+    class: AtomParser
+    languages: [atom]
+    extensions: [.atom, .xml]
+    description: Dedicated Atom 1.0 parser with full specification support
     package_priority: [tree-sitter-xml, tree-sitter-languages, tree-sitter-language-pack]
     fallback: xml
     
@@ -92,6 +122,68 @@ parsers:
     package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-rust]
     fallback: text
     
+  # Simple tree-sitter parsers (from simple.py)
+  go:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: GoParser
+    languages: [go]
+    extensions: [.go]
+    description: Simple Go parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-go]
+    fallback: text
+    
+  java:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: JavaParser
+    languages: [java]
+    extensions: [.java]
+    description: Simple Java parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-java]
+    fallback: text
+    
+  cpp:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: CppParser
+    languages: [cpp, c++, cxx]
+    extensions: [.cpp, .cxx, .cc, .hpp, .hxx, .h++]
+    description: Simple C++ parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-cpp]
+    fallback: text
+    
+  c:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: CParser
+    languages: [c]
+    extensions: [.c, .h]
+    description: Simple C parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-c]
+    fallback: text
+    
+  yaml:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: YAMLParser
+    languages: [yaml, yml]
+    extensions: [.yaml, .yml]
+    description: Simple YAML parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-yaml]
+    fallback: text
+    
+  toml:
+    type: tree_sitter_simple
+    module: chuk_code_raptor.chunking.parsers.simple
+    class: TOMLParser
+    languages: [toml]
+    extensions: [.toml]
+    description: Simple TOML parser using tree-sitter
+    package_priority: [tree-sitter-languages, tree-sitter-language-pack, tree-sitter-toml]
+    fallback: text
+    
+  # Heuristic parsers
   latex:
     type: heuristic
     module: chuk_code_raptor.chunking.parsers.latex
@@ -121,11 +213,14 @@ language_aliases:
   tex: latex
   md: markdown
   rs: rust
-  # RSS/Atom aliases
-  rss: rss_atom
-  atom: rss_atom
-  feed: rss_atom
-  syndication: rss_atom
+  # Feed aliases - route to coordinator
+  rss: feed
+  rss2: rss
+  rss1: rdf
+  atom: atom
+  feed: feed
+  syndication: feed
+  rss_atom: feed  # legacy alias
   # Other aliases
   txt: text
   log: text
@@ -148,10 +243,10 @@ package_recommendations:
   comprehensive:
     - name: tree-sitter-languages
       description: "Comprehensive tree-sitter language support (recommended)"
-      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "yaml", "rust", "go", "java", "cpp", "c"]
+      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "yaml", "rust", "go", "java", "cpp", "c", "toml"]
     - name: tree-sitter-language-pack
       description: "Alternative comprehensive package"
-      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "latex", "yaml"]
+      languages: ["python", "javascript", "typescript", "html", "css", "json", "xml", "yaml", "rust", "go", "java"]
   
   individual:
     python: tree-sitter-python
@@ -167,41 +262,56 @@ package_recommendations:
     java: tree-sitter-java
     cpp: tree-sitter-cpp
     c: tree-sitter-c
+    toml: tree-sitter-toml
 
 # Parser-specific configurations
 parser_configs:
-  # RSS/Atom parser configuration
-  rss_atom:
-    # Content extraction preferences
+  # Feed parser configurations
+  feed:
+    # Detection and routing
+    enable_format_detection: true
+    strict_format_validation: false
+    fallback_to_generic: true
+    
+    # Global feed settings
+    max_entries_per_feed: 100
+    min_entry_content_length: 30
+    include_feed_metadata: true
+    extract_categories: true
+    
+  rss:
+    # RSS 2.0 specific settings
     extract_full_content: true
     prefer_content_encoded: true
     clean_html_content: true
     extract_media_metadata: true
-    
-    # Entry processing
-    max_entries_per_feed: 100
-    min_entry_content_length: 50
-    extract_categories: true
-    parse_dates: true
-    
-    # Semantic analysis
-    detect_entry_types: true
-    calculate_freshness_scores: true
-    analyze_content_quality: true
-    extract_topics: true
-    
-    # Feed metadata extraction
-    extract_feed_image: true
-    parse_dublin_core: true
-    extract_itunes_metadata: true  # For podcast feeds
-    extract_media_rss: true
-    
-    # Content chunking
-    chunk_by_entry: true
+    extract_itunes_metadata: true
+    max_items_per_feed: 200
+    min_item_content_length: 30
     include_feed_metadata: true
-    merge_short_entries: false
+    
+  rdf:
+    # RSS 1.0 RDF specific settings
+    extract_dublin_core: true
+    extract_syndication_info: true
+    max_items_per_feed: 100
+    min_item_content_length: 20
+    include_feed_metadata: true
+    preserve_rdf_structure: true
+    
+  atom:
+    # Atom 1.0 specific settings
+    extract_full_content: true
+    clean_html_content: true
+    extract_all_links: true
+    extract_categories: true
+    max_entries_per_feed: 200
+    min_entry_content_length: 25
+    include_feed_metadata: true
+    preserve_xhtml_content: false
     
   latex:
+    # LaTeX parsing strategies
     parsing_strategy: balanced  # fine, balanced, coarse
     environment_extraction_mode: comprehensive
     math_detection_level: aggressive
@@ -210,13 +320,67 @@ parser_configs:
     enhanced_math_detection: true
     
   xml:
+    # XML parsing options
     preserve_atomic_elements: true
     group_similar_elements: true
     extract_cdata: true
     namespace_aware: true
     
   markdown:
+    # Markdown processing options
     section_chunking: true
     code_block_extraction: true
     table_extraction: true
     list_extraction: true
+    
+  python:
+    # Python-specific options
+    group_imports: true
+    analyze_code_quality: true
+    extract_type_hints: true
+    detect_architectural_roles: true
+    
+  html:
+    # HTML semantic processing
+    semantic_elements_only: true
+    preserve_structure: true
+    extract_attributes: true
+    
+  css:
+    # CSS rule processing
+    extract_selectors: true
+    analyze_specificity: true
+    detect_responsive_features: true
+    
+  json:
+    # JSON structure analysis
+    analyze_schema: true
+    detect_patterns: true
+    preserve_hierarchy: true
+
+# Parser priority order (used for auto-detection)
+parser_priority:
+  # Specialized parsers first
+  - feed     # Handles RSS/Atom coordination
+  - latex    # LaTeX documents
+  
+  # Programming languages
+  - python
+  - javascript
+  - rust
+  - go
+  - java
+  - cpp
+  - c
+  
+  # Markup and data formats
+  - html
+  - xml
+  - markdown
+  - css
+  - json
+  - yaml
+  - toml
+  
+  # Generic fallback
+  - text
